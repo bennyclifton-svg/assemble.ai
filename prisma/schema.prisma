@@ -44,6 +44,7 @@ enum CardType {
   SCHEME_DESIGN
   DETAIL_DESIGN
   DOCUMENTS
+  DELIVER
 }
 
 model Section {
@@ -63,17 +64,20 @@ model Section {
 }
 
 model Item {
-  id        String    @id @default(cuid())
-  sectionId String
-  section   Section   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  order     Int
-  type      String // 'text', 'number', 'date', 'toggle', 'status_icons'
-  data      Json // Flexible storage
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  createdBy String
-  updatedBy String
-  deletedAt DateTime?
+  id           String    @id @default(cuid())
+  sectionId    String
+  section      Section   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  order        Int
+  type         String    // 'text', 'number', 'date', 'toggle', 'status_icons'
+  data         Json      // Flexible storage
+  sourceCardId String?   // Cross-card reference for data flow
+  sourceItemId String?   // Source item reference for traceability
+  locked       Boolean   @default(false) // Immutability flag for tender packages
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  createdBy    String
+  updatedBy    String
+  deletedAt    DateTime?
 
   @@index([sectionId, order])
 }
