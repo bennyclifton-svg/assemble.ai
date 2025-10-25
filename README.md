@@ -1,36 +1,112 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# assemble.ai
 
-## Getting Started
+AI-powered tender package generation and management for construction projects.
 
-First, run the development server:
+## Story 1.1: Project Infrastructure Setup - COMPLETED ✅
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+This project has been set up with the following infrastructure per Story 1.1 requirements:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### ✅ Acceptance Criteria Met
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **AC-1.1**: Next.js 15 with TypeScript strict mode, App Router, and Tailwind CSS 4
+- **AC-1.2**: PostgreSQL database configured via Prisma 6.0.1 with initial schema
+- **AC-1.3**: AWS S3 service module created with signed URL generation
+- **AC-1.4**: Clerk authentication integrated with sign-in/sign-up pages and middleware
+- **AC-1.5**: Environment configuration with .env.local and .env.example
+- **AC-1.6**: Git repository initialized with proper .gitignore
+- **AC-1.7**: Project structure ready to run at http://localhost:3000
+- **AC-1.8**: Folder structure matches architecture specification
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Tech Stack
 
-## Learn More
+- **Framework**: Next.js 15.5.6 with App Router
+- **Language**: TypeScript 5.x with strict mode
+- **Styling**: Tailwind CSS 4.x
+- **Database**: PostgreSQL with Prisma 6.0.1 ORM
+- **Authentication**: Clerk
+- **File Storage**: AWS S3 (via AWS SDK v3)
+- **State Management**: Zustand 5.0.8
+- **Validation**: Zod 3.x
+- **Logging**: Pino 9.0.0
 
-To learn more about Next.js, take a look at the following resources:
+## Setup Instructions
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Prerequisites
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Node.js 20.9.0 or later
+- PostgreSQL 16.0 (local or cloud)
+- AWS account with S3 bucket
+- Clerk account
 
-## Deploy on Vercel
+### Installation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+2. **Configure environment variables**:
+   Copy `.env.example` to `.env.local` and fill in your credentials:
+   ```bash
+   cp .env.example .env.local
+   ```
+
+   Required variables:
+   - `DATABASE_URL`: PostgreSQL connection string
+   - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`: Clerk publishable key
+   - `CLERK_SECRET_KEY`: Clerk secret key
+   - `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`: AWS credentials
+   - `S3_BUCKET_NAME`: S3 bucket name
+
+3. **Setup database**:
+   ```bash
+   npx prisma generate
+   npx prisma migrate dev --name init
+   ```
+
+4. **Run development server**:
+   ```bash
+   npm run dev
+   ```
+
+5. **Access the application**:
+   Open [http://localhost:3000](http://localhost:3000) in your browser
+
+### Available Scripts
+
+- `npm run dev` - Start development server with Turbopack
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+- `npm run type-check` - Run TypeScript type checking
+
+## Database Schema
+
+The initial schema includes the three-tier data architecture:
+
+- **Project**: Top-level project container
+- **Card**: Eight card types (PLAN, CONSULTANT, CONTRACTOR, PROCURE, COST_PLANNING, SCHEME_DESIGN, DETAIL_DESIGN, DOCUMENTS)
+- **Section**: Organized sections within each card
+- **Item**: Individual data items with flexible JSON storage
+
+All models include soft delete support (`deletedAt`) and audit fields.
+
+## Authentication
+
+- Sign-in page: `/sign-in`
+- Sign-up page: `/sign-up`
+- Protected routes: `/projects/*`
+- Middleware automatically redirects unauthenticated users
+
+## Next Steps
+
+Story 1.1 establishes the foundation. Upcoming stories will implement:
+- Story 1.2: Core Database Schema enhancements
+- Story 1.3: Side Navigation Bar
+- Story 1.4: Plan Card Structure
+
+---
+
+**Implementation Date**: 2025-10-25
+**Story**: 1.1 - Project Infrastructure Setup
+**Status**: ✅ Complete
