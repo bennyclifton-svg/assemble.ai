@@ -6,6 +6,7 @@ export interface WorkspaceStore {
   // State
   activeCards: CardType[];
   collapsedNav: boolean;
+  collapsedSections: Record<string, Record<string, boolean>>; // projectId -> sectionId -> collapsed
 
   // Actions
   openCard: (type: CardType, replace?: boolean) => void;
@@ -14,6 +15,11 @@ export interface WorkspaceStore {
   toggleNavigation: () => void;
   isCardActive: (type: CardType) => boolean;
   canAddCard: () => boolean;
+
+  // Section collapse state
+  setSectionCollapsed: (projectId: string, sectionId: string, collapsed: boolean) => void;
+  toggleSection: (projectId: string, sectionId: string) => void;
+  isSectionCollapsed: (projectId: string, sectionId: string) => boolean;
 }
 
 const MAX_CARDS = 3;
@@ -24,6 +30,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       // Initial state
       activeCards: [],
       collapsedNav: false,
+      collapsedSections: {},
 
       // Open a card
       openCard: (type: CardType, replace = false) => {
@@ -79,6 +86,31 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       // Check if another card can be added
       canAddCard: () => {
         return get().activeCards.length < MAX_CARDS;
+      },
+
+      // Set section collapsed state
+      setSectionCollapsed: (projectId: string, sectionId: string, collapsed: boolean) => {
+        set((state) => ({
+          collapsedSections: {
+            ...state.collapsedSections,
+            [projectId]: {
+              ...state.collapsedSections[projectId],
+              [sectionId]: collapsed,
+            },
+          },
+        }));
+      },
+
+      // Toggle section collapsed state
+      toggleSection: (projectId: string, sectionId: string) => {
+        const { collapsedSections } = get();
+        const currentState = collapsedSections[projectId]?.[sectionId] ?? false;
+        get().setSectionCollapsed(projectId, sectionId, !currentState);
+      },
+
+      // Check if section is collapsed
+      isSectionCollapsed: (projectId: string, sectionId: string) => {
+        return get().collapsedSections[projectId]?.[sectionId] ?? false;
       },
     }),
     {

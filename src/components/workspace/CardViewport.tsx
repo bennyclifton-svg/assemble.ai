@@ -3,11 +3,18 @@
 import { useWorkspaceStore } from '@/stores/workspaceStore';
 import { CardType } from '@prisma/client';
 import { X } from 'lucide-react';
+import { PlanCard } from '@/components/cards/PlanCard';
 
 // Placeholder component for cards (will be replaced with actual card components in future stories)
-function CardPlaceholder({ type }: { type: CardType }) {
+function CardPlaceholder({ type, projectId }: { type: CardType; projectId: string }) {
   const { closeCard } = useWorkspaceStore();
 
+  // Return actual PlanCard if type is PLAN
+  if (type === CardType.PLAN) {
+    return <PlanCard projectId={projectId} onClose={() => closeCard(type)} />;
+  }
+
+  // Otherwise return placeholder for other cards
   const cardLabels: Record<CardType, string> = {
     [CardType.PLAN]: 'Plan Card',
     [CardType.SCHEME_DESIGN]: 'Scheme Design Card',
@@ -57,7 +64,11 @@ function CardPlaceholder({ type }: { type: CardType }) {
   );
 }
 
-export function CardViewport() {
+interface CardViewportProps {
+  projectId?: string;
+}
+
+export function CardViewport({ projectId = 'demo' }: CardViewportProps) {
   const { activeCards } = useWorkspaceStore();
 
   if (activeCards.length === 0) {
@@ -84,7 +95,7 @@ export function CardViewport() {
             minWidth: 0, // Allow flex shrinking
           }}
         >
-          <CardPlaceholder type={cardType} />
+          <CardPlaceholder type={cardType} projectId={projectId} />
         </div>
       ))}
     </div>

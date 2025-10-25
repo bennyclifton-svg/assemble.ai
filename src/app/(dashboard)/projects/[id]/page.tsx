@@ -11,7 +11,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   return (
     <div className="flex h-screen overflow-hidden">
       <NavigationSidebar />
-      <CardViewport />
+      <CardViewport projectId={id} />
     </div>
   );
 }
