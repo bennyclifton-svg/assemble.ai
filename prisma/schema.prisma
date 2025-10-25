@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id        String    @id @default(cuid())
+  name      String
+  userId    String
+  cards     Card[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+model Card {
+  id        String    @id @default(cuid())
+  projectId String
+  project   Project   @relation(fields: [projectId], references: [id])
+  type      CardType
+  sections  Section[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String
+  updatedBy String
+  deletedAt DateTime?
+
+  @@index([projectId, type])
+}
+
+enum CardType {
+  PLAN
+  CONSULTANT
+  CONTRACTOR
+  PROCURE
+  COST_PLANNING
+  SCHEME_DESIGN
+  DETAIL_DESIGN
+  DOCUMENTS
+}
+
+model Section {
+  id        String    @id @default(cuid())
+  cardId    String
+  card      Card      @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  name      String
+  order     Int
+  items     Item[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String
+  updatedBy String
+  deletedAt DateTime?
+
+  @@index([cardId, order])
+}
+
+model Item {
+  id        String    @id @default(cuid())
+  sectionId String
+  section   Section   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  order     Int
+  type      String // 'text', 'number', 'date', 'toggle', 'status_icons'
+  data      Json // Flexible storage
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String
+  updatedBy String
+  deletedAt DateTime?
+
+  @@index([sectionId, order])
+}
