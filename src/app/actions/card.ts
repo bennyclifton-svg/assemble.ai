@@ -146,3 +146,158 @@ export async function createSectionWithItemsAction(
     };
   }
 }
+
+/**
+ * Add a new item to a section
+ */
+export async function addItemAction(
+  sectionId: string,
+  data: Prisma.InputJsonValue,
+  type: string = 'text'
+): Promise<ActionResult<{ id: string; order: number }>> {
+  try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return {
+        success: false,
+        error: { message: 'Unauthorized', code: 'UNAUTHORIZED' },
+      };
+    }
+
+    // Get max order in section
+    const maxOrderItem = await prisma.item.findFirst({
+      where: { sectionId },
+      orderBy: { order: 'desc' },
+    });
+
+    const newOrder = (maxOrderItem?.order ?? 0) + 1;
+
+    const newItem = await prisma.item.create({
+      data: {
+        sectionId,
+        order: newOrder,
+        type,
+        data,
+        createdBy: userId,
+        updatedBy: userId,
+      },
+    });
+
+    revalidatePath('/projects/[id]', 'page');
+
+    return {
+      success: true,
+      data: { id: newItem.id, order: newItem.order },
+    };
+  } catch (error) {
+    console.error('Error adding item:', error);
+    return {
+      success: false,
+      error: {
+        message: error instanceof Error ? error.message : 'Failed to add item',
+        code: 'SERVER_ERROR',
+      },
+    };
+  }
+}
+
+/**
+ * Delete an item (soft delete)
+ */
+export async function deleteItemAction(itemId: string): Promise<ActionResult<{ id: string }>> {
+  try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return {
+        success: false,
+        error: { message: 'Unauthorized', code: 'UNAUTHORIZED' },
+      };
+    }
+
+    // Check if item is locked
+    const item = await prisma.item.findUnique({
+      where: { id: itemId },
+    });
+
+    if (!item) {
+      return {
+        success: false,
+        error: { message: 'Item not found', code: 'NOT_FOUND' },
+      };
+    }
+
+    if (item.locked) {
+      return {
+        success: false,
+        error: { message: 'Cannot delete locked item', code: 'LOCKED' },
+      };
+    }
+
+    // Soft delete
+    await prisma.item.delete({
+      where: { id: itemId },
+    });
+
+    revalidatePath('/projects/[id]', 'page');
+
+    return {
+      success: true,
+      data: { id: itemId },
+    };
+  } catch (error) {
+    console.error('Error deleting item:', error);
+    return {
+      success: false,
+      error: {
+        message: error instanceof Error ? error.message : 'Failed to delete item',
+        code: 'SERVER_ERROR',
+      },
+    };
+  }
+}
+
+/**
+ * Reorder items in a section
+ */
+export async function reorderItemsAction(
+  itemIds: string[]
+): Promise<ActionResult<{ count: number }>> {
+  try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return {
+        success: false,
+        error: { message: 'Unauthorized', code: 'UNAUTHORIZED' },
+      };
+    }
+
+    // Update all items in a transaction
+    await prisma.$transaction(
+      itemIds.map((id, index) =>
+        prisma.item.update({
+          where: { id },
+          data: { order: index, updatedBy: userId },
+        })
+      )
+    );
+
+    revalidatePath('/projects/[id]', 'page');
+
+    return {
+      success: true,
+      data: { count: itemIds.length },
+    };
+  } catch (error) {
+    console.error('Error reordering items:', error);
+    return {
+      success: false,
+      error: {
+        message: error instanceof Error ? error.message : 'Failed to reorder items',
+        code: 'SERVER_ERROR',
+      },
+    };
+  }
+}
