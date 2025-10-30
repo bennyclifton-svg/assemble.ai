@@ -1,0 +1,118 @@
+<story-context id="story-4.4" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4</storyId>
+    <title>Tender Package Finalization and Lock</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/4-4-tender-package-finalization-and-lock.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>construction manager</asA>
+    <iWant>to finalize and lock tender packages</iWant>
+    <soThat>released packages cannot be altered and maintain integrity throughout the tender process</soThat>
+    <tasks>
+      <task id="1" ac="1,2,3,6">Implement finalization workflow with confirmation, lock status, audit trail</task>
+      <task id="2" ac="4">Implement PDF export with professional formatting</task>
+      <task id="3" ac="4">Implement Word (.docx) export</task>
+      <task id="4" ac="5">Implement automatic filing to Documents/[Consultant]/Tender Pack.PDF</task>
+      <task id="5" ac="4">Build export and download UI</task>
+      <task id="6" ac="2">Enforce immutability at DB, API, and UI levels</task>
+      <task id="7" ac="All">Write tests for finalization and export</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">"Finalize Tender Pack" action with confirmation</criterion>
+    <criterion id="2">Package becomes immutable (no edits allowed)</criterion>
+    <criterion id="3">Locked status clearly indicated</criterion>
+    <criterion id="4">Export to PDF and Word formats</criterion>
+    <criterion id="5">Automatic filing to Documents/[Consultant]/Tender Pack.PDF</criterion>
+    <criterion id="6">Audit trail of finalization (who, when)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/PRD.md" title="PRD" section="FR034-FR038">Export and immutability requirements</doc>
+      <doc path="docs/PRD.md" title="PRD" section="NFR008-NFR009">Audit trail and immutability requirements</doc>
+      <doc path="docs/architecture.md" title="Architecture" section="File Storage">AWS S3 with signed URLs</doc>
+      <doc path="docs/PRD.md" title="PRD" section="User Journey 1 Step 5">Finalize and release workflow</doc>
+    </docs>
+
+    <code>
+      <artifact path="assemble-app/prisma/schema.prisma" kind="schema" symbol="Item.locked" lines="78" reason="Existing locked flag for immutability">
+        Item model already has locked Boolean field - extend pattern to TenderPackage
+      </artifact>
+      <artifact path="assemble-app/package.json" kind="dependencies" symbol="@aws-sdk/client-s3" lines="20" reason="S3 SDK available for file upload">
+        AWS S3 SDK installed for document filing
+      </artifact>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="@aws-sdk/client-s3" version="^3.917.0">S3 file storage</package>
+        <package name="@aws-sdk/s3-request-presigner" version="^3.917.0">Signed URLs</package>
+      </node>
+      <pdf-generation>
+        <option name="react-pdf">Generate PDF from React</option>
+        <option name="puppeteer">HTML to PDF</option>
+        <option name="pdfkit">Low-level PDF generation</option>
+      </pdf-generation>
+      <word-generation>
+        <package name="docx">Generate .docx files</package>
+      </word-generation>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="immutability">Once locked, package NEVER editable - enforce at all layers</constraint>
+    <constraint type="state-machine">draft → locked (no transitions from locked)</constraint>
+    <constraint type="audit">Complete finalization record: userId, timestamp, version (NFR008)</constraint>
+    <constraint type="pattern">Soft delete only - never hard-delete finalized tenders (NFR009)</constraint>
+    <constraint type="export">Professional quality exports suitable for external distribution</constraint>
+    <constraint type="filing">S3 path pattern: projects/{projectId}/documents/{category}/{filename}</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="TenderPackage.status" kind="enum_field">
+      <signature>
+status String @default("draft") // draft, locked
+finalizedAt DateTime?
+finalizedBy String?
+pdfPath String?  // S3 path
+docxPath String?  // S3 path
+filedDocumentId String?  // FK to Document
+      </signature>
+      <path>assemble-app/prisma/schema.prisma</path>
+    </interface>
+
+    <interface name="finalizeTenderPackage" kind="service">
+      <signature>
+async function finalizeTenderPackage(params: {
+  tenderPackageId: string;
+  userId: string;
+}): Promise&lt;{ success: boolean; pdfUrl: string; docxUrl: string }&gt;
+      </signature>
+      <path>assemble-app/src/server/services/tenderFinalizer.ts</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Test lock enforcement at all layers. Test PDF/Word generation validity. Test automatic S3 filing. E2E: edit → finalize → verify locked → export → verify files.</standards>
+    <locations>
+      <location>assemble-app/src/server/services/__tests__/pdfGenerator.test.ts</location>
+      <location>assemble-app/src/server/services/__tests__/wordGenerator.test.ts</location>
+      <location>assemble-app/e2e/tender-finalize-lock.spec.ts</location>
+    </locations>
+    <ideas>
+      <test ac="1,6" name="Finalization">Test confirmation dialog. Verify finalization metadata stored (userId, timestamp)</test>
+      <test ac="2" name="Immutability">Test all edit operations rejected on locked packages. Verify UI disables edit controls.</test>
+      <test ac="3" name="Lock Indicator">Test lock icon/banner displayed prominently</test>
+      <test ac="4" name="PDF Export">Test PDF generation. Verify valid PDF with correct content and formatting</test>
+      <test ac="4" name="Word Export">Test .docx generation. Verify valid Word file opens correctly</test>
+      <test ac="5" name="Auto-Filing">Test S3 upload. Verify Document record created. Verify correct path</test>
+    </ideas>
+  </tests>
+</story-context>

@@ -1,0 +1,208 @@
+<story-context id="story-4.1" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>1</storyId>
+    <title>Tender Package Assembly Interface</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/4-1-tender-package-assembly-interface.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>construction manager</asA>
+    <iWant>to select components for tender package assembly</iWant>
+    <soThat>I can specify exactly what to include in a tender package</soThat>
+    <tasks>
+      <task id="1" ac="1,2,3,4,5">Create Tender Package Assembly UI component
+        <subtask id="1.1">Design and implement the Tender Pack section layout within Consultant/Contractor Cards (common configuration for all firms in the discipline/trade)</subtask>
+        <subtask id="1.2">Add checkbox selection interface for Plan Card sections (Details, Objectives, Staging, Risk, Stakeholders)</subtask>
+        <subtask id="1.3">Add checkbox selection interface for current Consultant/Contractor Card sections (Scope, Deliverables, Fee Structure, Release dates)</subtask>
+        <subtask id="1.4">Add document schedule retrieval from Consultant Card/Tender Documents section (retrieve saved document list, not multi-select from Documents Card)</subtask>
+        <subtask id="1.5">Implement visual highlighting for selected components</subtask>
+        <subtask id="1.6">Add firm selector dropdown to choose which firm(s) to generate tender for</subtask>
+        <subtask id="1.7">Add prominent "Generate Tender Package" button with AI icon per selected firm</subtask>
+      </task>
+      <task id="2" ac="6">Implement component preview functionality
+        <subtask id="2.1">Create preview panel showing selected sections summary</subtask>
+        <subtask id="2.2">Display document schedule list in preview</subtask>
+        <subtask id="2.3">Add ability to review and deselect items before generation</subtask>
+      </task>
+      <task id="3" ac="1,2,3">Add data persistence and state management
+        <subtask id="3.1">Store selection state in Zustand workspace store</subtask>
+        <subtask id="3.2">Persist selections to database for recovery</subtask>
+        <subtask id="3.3">Implement tRPC endpoints for loading/saving tender package configurations</subtask>
+      </task>
+      <task id="4" ac="All">Write tests for assembly interface
+        <subtask id="4.1">Unit tests for selection state management</subtask>
+        <subtask id="4.2">Integration tests for checkbox interactions</subtask>
+        <subtask id="4.3">E2E test for complete assembly workflow</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">Interface for selecting Plan Card sections (checkbox selection)</criterion>
+    <criterion id="2">Interface for selecting Consultant/Contractor Card sections</criterion>
+    <criterion id="3">Interface for selecting document schedules from Documents Card</criterion>
+    <criterion id="4">Selected items highlighted visually</criterion>
+    <criterion id="5">"Generate Tender Package" button prominently displayed</criterion>
+    <criterion id="6">Preview of selected components before generation</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/PRD.md" title="Product Requirements Document" section="Tender Package Generation">
+        Functional requirements FR016-FR020 define tender generation: select Plan sections, Consultant/Contractor sections, document schedules, generate packages with AI in &lt;30s, allow review/edit before finalization.
+      </doc>
+      <doc path="docs/PRD.md" title="Product Requirements Document" section="Document Selection">
+        FR009-FR010 establish document selection functionality with multi-select (Shift+click, Ctrl+click) and document set creation for tender packages.
+      </doc>
+      <doc path="docs/epics.md" title="Epic Breakdown" section="Story 2.5 - Document Selection for Tender Packages">
+        Story 2.5 implemented document selection with multi-select, tagging, and association with tender packages. Document selections persist and can be reused.
+      </doc>
+      <doc path="docs/architecture.md" title="Decision Architecture" section="Multi-Card Workspace Pattern">
+        Novel pattern enabling concurrent work across 2-3 cards with data flow. DragController manages cross-card operations. Optimistic updates applied immediately with rollback on failure.
+      </doc>
+      <doc path="docs/architecture.md" title="Decision Architecture" section="Technology Stack">
+        Next.js 15 with App Router, TypeScript, Tailwind CSS 4, Prisma 6, Zustand 5.0.8 for state management, tRPC for type-safe APIs, dnd-kit for drag-drop.
+      </doc>
+      <doc path="docs/tech-spec-epic-3.md" title="Epic 3 Technical Specification" section="Consultant/Contractor Card Structure">
+        Cards contain sections: Firms, Scope, Deliverables, Fee Structure, Tender Documents, Tender Release, Tender Pack, RFI/Addendum, Tender Evaluation, Recommendation Report.
+      </doc>
+    </docs>
+
+    <code>
+      <artifact path="assemble-app/prisma/schema.prisma" kind="schema" symbol="TenderPackageSection" lines="146-159" reason="Existing model for storing tender package section selections - needs TenderPackageConfig model added">
+        Current schema has TenderPackageSection (junction table) and TenderPackageDocument models. Need to add TenderPackageConfig model to store per-discipline/trade configuration.
+      </artifact>
+      <artifact path="assemble-app/prisma/schema.prisma" kind="schema" symbol="Section" lines="52-67" reason="Section model represents Card sections that can be selected for tender packages">
+        Section model with cardId, name, order, items. Used for storing Plan Card and Consultant/Contractor Card sections.
+      </artifact>
+      <artifact path="assemble-app/src/components/cards/CardPanel.tsx" kind="component" reason="Existing Card system component to leverage for consistent UI">
+        Base CardPanel component provides consistent structure for all cards. Should be extended for Tender Pack section.
+      </artifact>
+      <artifact path="assemble-app/src/components/cards/ConsultantCard.tsx" kind="component" reason="Consultant Card implementation - where Tender Pack section will be added">
+        Existing Consultant Card structure. Tender Pack section will be added as new section within this card.
+      </artifact>
+      <artifact path="assemble-app/src/components/tender/CardSectionSelector.tsx" kind="component" reason="Existing tender-related component that may provide patterns for selection UI">
+        Already exists in tender directory - review for reusable patterns.
+      </artifact>
+      <artifact path="assemble-app/src/stores/workspaceStore.ts" kind="store" symbol="savedTenderDocuments" lines="26" reason="Zustand store already has savedTenderDocuments state for document schedule retrieval">
+        Store contains savedTenderDocuments mapping (projectId → disciplineId → documentIds). Use this for retrieving saved document lists.
+      </artifact>
+      <artifact path="assemble-app/src/stores/workspaceStore.ts" kind="store" symbol="WorkspaceStore" lines="7-80" reason="Complete workspace store interface showing available state management patterns">
+        Zustand store with persist middleware, handles card state, section collapse, consultant/contractor toggles, document selection. Follow this pattern for tender configuration state.
+      </artifact>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="next" version="15.5.6">App Router framework</package>
+        <package name="react" version="19.1.0">UI framework</package>
+        <package name="typescript" version="^5">Type safety</package>
+        <package name="@prisma/client" version="^6.0.1">Database ORM</package>
+        <package name="zustand" version="^5.0.8">State management</package>
+        <package name="@dnd-kit/core" version="^6.3.1">Drag and drop (if needed)</package>
+        <package name="@dnd-kit/sortable" version="^10.0.0">Sortable lists</package>
+        <package name="lucide-react" version="^0.548.0">Icon library</package>
+        <package name="tailwindcss" version="^4">Styling</package>
+        <package name="react-hook-form" version="^7.65.0">Form handling</package>
+        <package name="zod" version="^3.25.76">Schema validation</package>
+        <package name="clsx" version="^2.1.1">Conditional classes</package>
+        <package name="tailwind-merge" version="^3.3.1">Merge Tailwind classes</package>
+      </node>
+      <testing>
+        <package name="vitest" version="^4.0.3">Unit testing framework</package>
+        <package name="@testing-library/react" version="^16.3.0">React component testing</package>
+        <package name="@testing-library/user-event" version="^14.6.1">User interaction simulation</package>
+        <package name="@testing-library/jest-dom" version="^6.9.1">Jest DOM matchers</package>
+      </testing>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="pattern">Follow Multi-Card Workspace pattern from architecture.md for cross-card data selection</constraint>
+    <constraint type="pattern">Implement optimistic updates for selection state changes with rollback on failure</constraint>
+    <constraint type="pattern">Leverage existing Card system components (CardPanel, Section) for consistent UI</constraint>
+    <constraint type="architecture">Configuration applies to entire discipline/trade, not per-firm (unique constraint on consultantCardId/contractorCardId)</constraint>
+    <constraint type="architecture">Document schedule retrieved from existing Tender Documents section (savedTenderDocuments in workspaceStore), not re-selected</constraint>
+    <constraint type="workflow">Configure Once, Generate Many: 1) Configure tender package once per discipline/trade, 2) Select firm(s) from dropdown, 3) Generate personalized packages</constraint>
+    <constraint type="database">Use three-tier Card → Section → Item hierarchy established in Epic 1</constraint>
+    <constraint type="state">Store selection state in Zustand with persist middleware, persist to database via tRPC</constraint>
+    <constraint type="performance">Support single or multiple firm selection for batch generation</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="TenderPackageConfig" kind="database_model">
+      <signature>
+model TenderPackageConfig {
+  id                    String   @id @default(cuid())
+  consultantCardId      String?  // FK to ConsultantCard (one of these)
+  contractorCardId      String?  // FK to ContractorCard (one of these)
+  selectedPlanSections  Json     // Array of Plan Card section IDs
+  selectedCardSections  Json     // Array of Consultant/Contractor Card section IDs
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  @@unique([consultantCardId])
+  @@unique([contractorCardId])
+}
+      </signature>
+      <path>assemble-app/prisma/schema.prisma</path>
+    </interface>
+
+    <interface name="WorkspaceStore.savedTenderDocuments" kind="zustand_state">
+      <signature>
+savedTenderDocuments: Record&lt;string, Record&lt;string, string[]&gt;&gt; // projectId → disciplineId/tradeId → documentIds[]
+getSavedTenderDocuments: (projectId: string, disciplineId: string) =&gt; string[]
+saveTenderDocuments: (projectId: string, disciplineId: string, documentIds: string[]) =&gt; void
+clearSavedTenderDocuments: (projectId: string, disciplineId: string) =&gt; void
+      </signature>
+      <path>assemble-app/src/stores/workspaceStore.ts</path>
+    </interface>
+
+    <interface name="CardType" kind="enum">
+      <signature>
+enum CardType {
+  PLAN
+  CONSULTANT
+  CONTRACTOR
+  PROCURE
+  COST_PLANNING
+  SCHEME_DESIGN
+  DETAIL_DESIGN
+  DOCUMENTS
+  DELIVER
+}
+      </signature>
+      <path>assemble-app/prisma/schema.prisma</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Unit tests with Vitest for component logic and state management.
+      Integration tests with Testing Library for user interactions.
+      E2E tests with Playwright (to be added) for full workflows.
+      Target coverage: &gt;80% for tender selection logic.
+      Test files co-located with source in __tests__ directories or .test.tsx suffixes.
+    </standards>
+
+    <locations>
+      <location>assemble-app/src/components/**/__tests__/*.test.tsx</location>
+      <location>assemble-app/src/stores/__tests__/*.test.ts</location>
+      <location>assemble-app/e2e/**/*.spec.ts</location>
+    </locations>
+
+    <ideas>
+      <test ac="1,2" name="Section Selection">Test checkbox selection for Plan and Card sections. Verify state updates in Zustand store. Test visual highlighting of selected items.</test>
+      <test ac="3" name="Document Schedule Retrieval">Test retrieval of saved document list from workspaceStore.savedTenderDocuments. Verify correct documentIds returned for discipline/trade.</test>
+      <test ac="4" name="Visual Highlighting">Test selected components show visual indicators. Verify highlighting persists across re-renders.</test>
+      <test ac="5" name="Generate Button">Test button visibility and enabled state. Verify button appears after firm selection.</test>
+      <test ac="6" name="Preview Functionality">Test preview panel displays selected sections and documents. Verify ability to deselect items from preview.</test>
+      <test ac="all" name="Configuration Persistence">Test configuration saves to database. Verify loading existing configuration on card open. Test unique constraint on consultantCardId/contractorCardId.</test>
+      <test ac="all" name="Firm Selection Workflow">Test firm dropdown population. Test single and multiple firm selection. Verify generate button per selected firm.</test>
+      <test ac="all" name="E2E Assembly Workflow">Complete workflow: configure sections → select documents → choose firm → generate. Verify state consistency throughout.</test>
+    </ideas>
+  </tests>
+</story-context>

@@ -1,0 +1,150 @@
+<story-context id="story-4.2" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>2</storyId>
+    <title>AI Tender Package Generation</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/4-2-ai-tender-package-generation.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>construction manager</asA>
+    <iWant>AI to generate comprehensive tender packages</iWant>
+    <soThat>I get professional, project-specific documents quickly without manual assembly</soThat>
+    <tasks>
+      <task id="1" ac="1,2,3,4">Implement AI tender generation service with OpenAI GPT-4 via Vercel AI SDK, data aggregation, prompt engineering for sharp content, document schedule generation, structured output</task>
+      <task id="2" ac="5,6">Create server action with streaming response, timeout handling, optimize for &lt;30s generation</task>
+      <task id="3" ac="6">Build progress indicator UI with real-time status updates</task>
+      <task id="4" ac="1,3,4">Store generated tender package with TenderPackage model, link to Card</task>
+      <task id="5" ac="All">Write comprehensive tests with mocked AI, performance tests, E2E</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">AI compiles selected components into coherent package</criterion>
+    <criterion id="2">Generates sharp, focused content (not generic templates)</criterion>
+    <criterion id="3">Package includes all selected sections with appropriate formatting</criterion>
+    <criterion id="4">Document schedule created (not actual document copies)</criterion>
+    <criterion id="5">Generation completes in &lt; 30 seconds</criterion>
+    <criterion id="6">Progress indicator during generation</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/PRD.md" title="PRD" section="NFR002">
+        Performance requirement: System shall generate tender packages in &lt; 30 seconds
+      </doc>
+      <doc path="docs/PRD.md" title="PRD" section="FR016-FR020">
+        Tender generation requirements: use AI for sharp project-specific content, complete in &lt;30s, support review/edit
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="AI Services">
+        OpenAI GPT-4 Turbo for document processing, GPT-4 Vision for OCR, Vercel AI SDK for unified AI interface
+      </doc>
+      <doc path="docs/PRD.md" title="PRD" section="User Journey 1 Step 4">
+        Tender assembly workflow: select sections → AI generates in &lt;30s → user reviews
+      </doc>
+    </docs>
+
+    <code>
+      <artifact path="assemble-app/package.json" kind="dependencies" symbol="openai" lines="37" reason="OpenAI package v6.7.0 available for GPT-4 integration">
+        OpenAI SDK installed - use for GPT-4 API calls
+      </artifact>
+      <artifact path="assemble-app/prisma/schema.prisma" kind="schema" symbol="TenderPackageDocument" lines="132-144" reason="Existing model for tender-document relationships">
+        Junction table exists - extend with TenderPackage parent model
+      </artifact>
+      <artifact path="assemble-app/prisma/schema.prisma" kind="schema" symbol="TenderPackageSection" lines="146-159" reason="Existing model for tender-section relationships">
+        Junction table exists - connects tender packages to sections
+      </artifact>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="openai" version="^6.7.0">OpenAI API SDK</package>
+        <package name="@prisma/client" version="^6.0.1">Database ORM</package>
+        <package name="next" version="15.5.6">Server Actions support</package>
+        <package name="zod" version="^3.25.76">Schema validation for AI output</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="performance">Generation must complete in &lt; 30 seconds (NFR002)</constraint>
+    <constraint type="ai">Use Vercel AI SDK with OpenAI GPT-4 Turbo (not GPT-4 - Turbo is faster)</constraint>
+    <constraint type="pattern">Implement streaming responses for real-time progress updates</constraint>
+    <constraint type="pattern">Follow Server Actions pattern for generation trigger</constraint>
+    <constraint type="architecture">Service layer pattern - keep generation logic independent and testable</constraint>
+    <constraint type="audit">Maintain audit trail for all AI-generated content (who, when, model used)</constraint>
+    <constraint type="prompt">Sharp, project-specific content - avoid generic templates</constraint>
+    <constraint type="data">Document schedule contains references (paths) only, not actual file copies</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="TenderPackage" kind="database_model">
+      <signature>
+model TenderPackage {
+  id                    String   @id @default(cuid())
+  consultantCardId      String?
+  contractorCardId      String?
+  configId              String   // FK to TenderPackageConfig
+  generatedContent      Json     // Structured sections
+  documentSchedule      Json     // Array of DocumentSchedule
+  status                String   @default("draft") // draft, locked
+  generatedAt           DateTime @default(now())
+  generatedBy           String
+  aiModel               String   // e.g., "gpt-4-turbo"
+  generationTimeMs      Int
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+      </signature>
+      <path>assemble-app/prisma/schema.prisma</path>
+    </interface>
+
+    <interface name="tenderGenerator" kind="service">
+      <signature>
+async function generateTenderPackage(params: {
+  configId: string;
+  firmId: string;
+  userId: string;
+}): Promise&lt;TenderPackage&gt;
+      </signature>
+      <path>assemble-app/src/server/services/tenderGenerator.ts</path>
+    </interface>
+
+    <interface name="generateTenderAction" kind="server_action">
+      <signature>
+async function generateTenderAction(
+  configId: string,
+  firmId: string
+): Promise&lt;{ success: boolean; tenderPackageId?: string; error?: string }&gt;
+      </signature>
+      <path>assemble-app/src/app/actions/tender.ts</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Unit tests: Mock OpenAI responses for deterministic behavior.
+      Performance tests: Verify &lt;30s generation requirement.
+      Integration tests: Test data aggregation from Cards and Documents.
+      E2E tests: Full workflow from button click to package stored.
+    </standards>
+
+    <locations>
+      <location>assemble-app/src/server/services/__tests__/tenderGenerator.test.ts</location>
+      <location>assemble-app/src/app/actions/__tests__/tender.test.ts</location>
+      <location>assemble-app/e2e/tender-generation.spec.ts</location>
+    </locations>
+
+    <ideas>
+      <test ac="1,2,3" name="AI Content Generation">Mock GPT-4 responses. Test data aggregation from Plan, Consultant, Document sources. Verify sharp, non-generic content output.</test>
+      <test ac="4" name="Document Schedule">Test document schedule generation with references only. Verify no file data in schedule.</test>
+      <test ac="5" name="Performance">Test with various tender sizes. Verify generation completes in &lt;30s. Use GPT-4 Turbo for speed.</test>
+      <test ac="6" name="Progress Updates">Test streaming response. Verify progress messages received. Test timeout handling.</test>
+      <test ac="all" name="Error Handling">Test AI failures, timeouts, network issues. Verify graceful degradation and user-friendly error messages.</test>
+      <test ac="all" name="Audit Trail">Verify generatedAt, generatedBy, aiModel, generationTimeMs stored correctly</test>
+    </ideas>
+  </tests>
+</story-context>

@@ -1,0 +1,103 @@
+<story-context id="story-4.3" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>3</storyId>
+    <title>Tender Package Review and Edit</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/4-3-tender-package-review-and-edit.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>construction manager</asA>
+    <iWant>to review and edit generated tender packages</iWant>
+    <soThat>I can ensure accuracy and make refinements before releasing to firms</soThat>
+    <tasks>
+      <task id="1" ac="1,5">Create tender package review UI with section layout, PDF preview</task>
+      <task id="2" ac="2">Implement in-line editing with contentEditable or rich text editor</task>
+      <task id="3" ac="3">Add track changes and revision marking system</task>
+      <task id="4" ac="4">Implement draft version management with auto-save</task>
+      <task id="5" ac="5">Create PDF preview system with professional formatting</task>
+      <task id="6" ac="All">Write tests for review and edit functionality</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">Generated package displayed for review</criterion>
+    <criterion id="2">In-line editing capabilities for all sections</criterion>
+    <criterion id="3">Track changes/revision marking</criterion>
+    <criterion id="4">Save draft versions before finalizing</criterion>
+    <criterion id="5">Preview in final format (PDF layout)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/PRD.md" title="PRD" section="FR020">Review and edit AI-generated tender packages before finalization</doc>
+      <doc path="docs/PRD.md" title="PRD" section="NFR008">Audit trail requirement - maintain complete history</doc>
+      <doc path="docs/architecture.md" title="Architecture" section="Implementation Patterns">Optimistic updates for immediate UI feedback</doc>
+    </docs>
+
+    <code>
+      <artifact path="assemble-app/src/stores/workspaceStore.ts" kind="store" reason="Existing Zustand patterns for state management with persist middleware">
+        Follow existing Zustand patterns for tender edit state
+      </artifact>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="react-hook-form" version="^7.65.0">Form state management</package>
+        <package name="zustand" version="^5.0.8">Edit state management</package>
+      </node>
+      <rich-text-options>
+        <option name="tiptap">Modern, extensible rich text editor</option>
+        <option name="lexical">Facebook's rich text framework</option>
+      </rich-text-options>
+      <pdf-generation>
+        <option name="react-pdf">Generate PDF from React components</option>
+        <option name="puppeteer">Render HTML to PDF</option>
+      </pdf-generation>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="pattern">Optimistic updates for immediate edit feedback with rollback on failure</constraint>
+    <constraint type="state">Zustand store with persist middleware for edit state</constraint>
+    <constraint type="performance">Debounce auto-save: wait 30s after last change before saving</constraint>
+    <constraint type="audit">Complete revision history for rollback and audit trail (NFR008)</constraint>
+    <constraint type="immutability">Enforce separation between draft (editable) and locked (immutable) states</constraint>
+    <constraint type="formatting">Limit rich text to: bold, italic, lists, headings - preserve markdown compatibility</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="TenderRevision" kind="database_model">
+      <signature>
+model TenderRevision {
+  id              String   @id @default(cuid())
+  tenderPackageId String
+  versionNumber   Int
+  changes         Json     // Array of change objects
+  snapshot        Json     // Complete tender content
+  createdAt       DateTime @default(now())
+  createdBy       String
+  @@unique([tenderPackageId, versionNumber])
+}
+      </signature>
+      <path>assemble-app/prisma/schema.prisma</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Test EditableSection with various content types. Test auto-save with simulated typing. Verify revision history captures all changes. E2E: edit → save → preview → edit again.</standards>
+    <locations>
+      <location>assemble-app/src/components/tender/__tests__/EditableSection.test.tsx</location>
+      <location>assemble-app/e2e/tender-review-edit.spec.ts</location>
+    </locations>
+    <ideas>
+      <test ac="2" name="In-line Editing">Test contentEditable or rich text editor. Verify state updates immediately.</test>
+      <test ac="3" name="Track Changes">Test change highlighting. Verify AI-generated vs user-edited content differentiated.</test>
+      <test ac="4" name="Auto-Save">Test debounced saves. Verify "Saving..." and "All changes saved" indicators.</test>
+      <test ac="5" name="PDF Preview">Test preview rendering. Verify toggle between edit and preview modes.</test>
+    </ideas>
+  </tests>
+</story-context>
