@@ -1,0 +1,210 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>3.6</storyId>
+    <title>RFI and Addendum Management</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/3-6-rfi-and-addendum-management.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a user</asA>
+    <iWant>to manage RFIs and addendums during tender period</iWant>
+    <soThat>I can handle clarifications systematically</soThat>
+    <tasks>
+      - Create column-based RFI/Addendum layout (AC: 32, 33, 34)
+      - Implement add/delete/reorder per firm (AC: 35)
+      - Enable title editing (AC: 36)
+      - Implement drag-drop document handling (AC: 37, 38)
+      - Auto-populate dates (AC: 39)
+      - Implement toggle states (AC: 40, 41, 42, 43)
+      - Create database schema (AC: All)
+      - Testing
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    AC-32: RFI and Addendum sections organized in column-based layout (1 column per firm, side-by-side)
+    AC-33: Each firm column displays 3 default placeholders: RFI 01, RFI 02, RFI 03 (all ghosted)
+    AC-34: Each firm column displays 3 default placeholders: Addendum 01, 02, 03 (all ghosted)
+    AC-35: User can add/delete/reorder RFI and Addendum items per firm
+    AC-36: Double-click to edit RFI/Addendum title within firm column
+    AC-37: Drag-drop zone for RFI and Addendum documents within each firm column
+    AC-38: Drag-drop document auto-files to Documents/[Consultant or Contractor]/[Firm Name]/filename.pdf
+    AC-39: Auto-populate date with current date (manual override available)
+    AC-40: One-click toggle: Green highlight (received/released), ghosted (not received/released)
+    AC-41: For RFI: Green = received from that firm, Ghosted = anticipated but not received
+    AC-42: For Addendum: Green = released to that firm, Ghosted = pre-prepared but not issued
+    AC-43: User can selectively issue Addendum to 1 or more firms (not necessarily all)
+    AC-44: No requirement to track responses against RFI
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      - path: docs/tech-spec-epic-3.md
+        title: Technical Specification - Epic 3
+        section: Data Models
+        snippet: Defines RFI and Addendum models with firmId foreign key, title, date fields, isReceived/isReleased booleans, documentPath, and displayOrder for per-firm tracking.
+
+      - path: docs/tech-spec-epic-3.md
+        title: Technical Specification - Epic 3
+        section: Workflows and Sequencing
+        snippet: Documents RFI and Addendum Processing Flow including document filing, state toggling, and selective issuance workflows.
+
+      - path: docs/epics.md
+        title: Product Epics
+        section: Epic 3 Story 3.6
+        snippet: Original acceptance criteria and business requirements for firm-specific RFI and Addendum management.
+
+      - path: docs/prd.md
+        title: Product Requirements Document
+        section: Consultant/Contractor Cards - RFI and Addendum
+        snippet: Business context for tender period clarification management with per-firm tracking and selective issuance capabilities.
+    </docs>
+
+    <code>
+      - path: assemble-app/prisma/schema.prisma
+        kind: database-schema
+        symbol: Rfi, Addendum models
+        lines: to-be-created
+        reason: Database models defining RFI and Addendum with firmId relationship, state fields, and document paths. Required for AC-32 through AC-44.
+
+      - path: assemble-app/src/components/cards/sections/RfiSection.tsx
+        kind: component
+        symbol: RfiSection
+        lines: to-be-created
+        reason: UI component implementing column-based RFI layout per firm with placeholders, drag-drop, toggle states, and title editing. Implements AC-32, AC-33, AC-35, AC-36, AC-37, AC-38, AC-39, AC-40, AC-41.
+
+      - path: assemble-app/src/components/cards/sections/AddendumSection.tsx
+        kind: component
+        symbol: AddendumSection
+        lines: to-be-created
+        reason: UI component implementing column-based Addendum layout per firm with placeholders, drag-drop, selective issuance, and toggle states. Implements AC-32, AC-34, AC-35, AC-36, AC-37, AC-38, AC-39, AC-40, AC-42, AC-43.
+
+      - path: assemble-app/src/app/actions/rfi.ts
+        kind: server-action
+        symbol: createRfi, updateRfi, deleteRfi, toggleRfiReceived, uploadRfiDocument
+        lines: to-be-created
+        reason: Server actions for RFI CRUD operations, state toggling, and document handling. Supports AC-35, AC-36, AC-37, AC-38, AC-40, AC-41.
+
+      - path: assemble-app/src/app/actions/addendum.ts
+        kind: server-action
+        symbol: createAddendum, updateAddendum, deleteAddendum, toggleAddendumReleased, uploadAddendumDocument
+        lines: to-be-created
+        reason: Server actions for Addendum CRUD operations, selective issuance toggling, and document handling. Supports AC-35, AC-36, AC-37, AC-38, AC-40, AC-42, AC-43.
+
+      - path: assemble-app/src/components/cards/sections/FirmsSection.tsx
+        kind: component
+        symbol: FirmColumn
+        lines: existing-file
+        reason: Existing component defining firm structure. May need integration points for RFI/Addendum sections in column layout.
+    </code>
+
+    <dependencies>
+      - node:
+          react-hook-form: "^7.x" (Form state management)
+          @dnd-kit/core: "^6.x" (Drag-and-drop for reordering and document upload)
+          @dnd-kit/sortable: "^8.x" (Sortable lists for reordering)
+          date-fns: "^2.x" (Date formatting and manipulation)
+          zod: "^3.x" (Validation schemas)
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Each firm must have independent RFI and Addendum tracking
+    - Default 3 RFI placeholders per firm (RFI 01, 02, 03) - all ghosted by default
+    - Default 3 Addendum placeholders per firm (Addendum 01, 02, 03) - all ghosted by default
+    - Document filing path format: Documents/[Consultant or Contractor]/[Firm Name]/filename.pdf
+    - RFI state: ghosted (anticipated) vs green (received)
+    - Addendum state: ghosted (pre-prepared) vs green (released)
+    - Addendum issuance must be selective (can release to subset of firms, not all-or-nothing)
+    - No response tracking required for RFIs (AC-44)
+    - Auto-populate current date on document upload, allow manual override
+    - Double-click to edit titles inline (no modal dialogs)
+    - One-click toggle for state changes (ghosted ↔ green)
+    - Support drag-drop reordering within firm column
+    - Validate unique titles within each firm's RFI/Addendum lists
+    - Display order must persist across sessions (stored in database)
+  </constraints>
+
+  <interfaces>
+    - name: Rfi (Prisma Model)
+      kind: Database Model
+      signature: "{ id: string; firmId: string; title: string; dateReceived?: Date; isReceived: boolean; documentPath?: string; displayOrder: number; createdAt: Date; updatedAt: Date }"
+      path: assemble-app/prisma/schema.prisma
+
+    - name: Addendum (Prisma Model)
+      kind: Database Model
+      signature: "{ id: string; firmId: string; title: string; dateReleased?: Date; isReleased: boolean; documentPath?: string; displayOrder: number; createdAt: Date; updatedAt: Date }"
+      path: assemble-app/prisma/schema.prisma
+
+    - name: createRfi
+      kind: Server Action
+      signature: "async function createRfi(firmId: string, title: string): Promise<Rfi>"
+      path: assemble-app/src/app/actions/rfi.ts
+
+    - name: toggleRfiReceived
+      kind: Server Action
+      signature: "async function toggleRfiReceived(rfiId: string, isReceived: boolean): Promise<Rfi>"
+      path: assemble-app/src/app/actions/rfi.ts
+
+    - name: uploadRfiDocument
+      kind: Server Action
+      signature: "async function uploadRfiDocument(rfiId: string, file: File, firmName: string, cardType: 'Consultant' | 'Contractor'): Promise<Rfi>"
+      path: assemble-app/src/app/actions/rfi.ts
+
+    - name: createAddendum
+      kind: Server Action
+      signature: "async function createAddendum(firmId: string, title: string): Promise<Addendum>"
+      path: assemble-app/src/app/actions/addendum.ts
+
+    - name: toggleAddendumReleased
+      kind: Server Action
+      signature: "async function toggleAddendumReleased(addendumId: string, isReleased: boolean): Promise<Addendum>"
+      path: assemble-app/src/app/actions/addendum.ts
+
+    - name: uploadAddendumDocument
+      kind: Server Action
+      signature: "async function uploadAddendumDocument(addendumId: string, file: File, firmName: string, cardType: 'Consultant' | 'Contractor'): Promise<Addendum>"
+      path: assemble-app/src/app/actions/addendum.ts
+  </interfaces>
+
+  <tests>
+    <standards>
+      Project uses Jest for unit testing and Playwright for E2E testing. Test drag-drop interactions with @testing-library/user-event. Mock file system operations for document uploads.
+    </standards>
+
+    <locations>
+      - assemble-app/src/__tests__/ (unit tests)
+      - assemble-app/e2e/ (end-to-end tests)
+    </locations>
+
+    <ideas>
+      Unit Tests:
+      - Test RFI column component renders 3 default ghosted placeholders (AC-33)
+      - Test Addendum column component renders 3 default ghosted placeholders (AC-34)
+      - Test toggle state logic: ghosted ↔ green for RFI (AC-40, AC-41)
+      - Test toggle state logic: ghosted ↔ green for Addendum (AC-40, AC-42)
+      - Test title editing with double-click and inline input (AC-36)
+      - Test unique title validation within firm (AC-36)
+      - Test document filing path construction for both card types (AC-38)
+
+      Integration Tests:
+      - Test add/delete RFI per firm updates database correctly (AC-35)
+      - Test add/delete Addendum per firm updates database correctly (AC-35)
+      - Test drag-drop document → verify correct filing path and database update (AC-37, AC-38)
+      - Test date auto-population on document upload with manual override (AC-39)
+      - Test selective Addendum issuance across multiple firms (AC-43)
+      - Test reordering updates displayOrder in database (AC-35)
+
+      E2E Tests:
+      - Complete RFI workflow: add RFI → upload document → toggle received → verify green state (AC-33, AC-35, AC-37, AC-38, AC-39, AC-40, AC-41)
+      - Complete Addendum workflow: add Addendum → upload document → selectively release to 2 of 3 firms → verify states (AC-34, AC-35, AC-37, AC-38, AC-39, AC-40, AC-42, AC-43)
+      - Test column-based layout displays all firms side-by-side (AC-32)
+      - Test drag-drop reordering persists across page reload (AC-35)
+      - Verify no response tracking UI appears for RFIs (AC-44)
+    </ideas>
+  </tests>
+</story-context>

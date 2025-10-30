@@ -76,3 +76,4 @@ prisma/migrations/*_dev/
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+BMAD-METHOD/

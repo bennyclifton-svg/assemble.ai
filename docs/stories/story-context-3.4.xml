@@ -1,0 +1,164 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>3.4</storyId>
+    <title>Scope and Deliverables with AI Generation</title>
+    <status>Done</status>
+    <generatedAt>2025-10-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/3-4-scope-and-deliverables-with-ai-generation.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a user</asA>
+    <iWant>to define scope and deliverables with AI assistance</iWant>
+    <soThat>I can create comprehensive requirements quickly</soThat>
+    <tasks>
+      - Create Scope and Deliverables section UI (AC: 19, 20)
+      - Implement AI Generate button (AC: 21)
+      - Add drag-drop document support (AC: 22)
+      - Configure AI generation service (AC: 23, 24)
+      - Enable manual editing (AC: 25)
+      - Implement auto-save (AC: 26)
+      - Testing (AC: All)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    AC-19: User can add/delete/reorder items in Scope and Deliverables sections
+    AC-20: Text areas for Scope and Deliverables sections with keyword/list input
+    AC-21: "AI Generate" button for each section
+    AC-22: Alternative: Drag-drop documents into section to trigger AI generation
+    AC-23: AI generates discipline-specific or trade-specific scope based on project context
+    AC-24: AI uses context from Plan Card, Consultant/Contractor Card, and documents
+    AC-25: Manual editing of all generated content
+    AC-26: Content auto-saves to database for later retrieval in Tender Pack assembly
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      - path: docs/tech-spec-epic-3.md
+        title: Technical Specification - Epic 3
+        section: Services and Modules
+        snippet: Defines ScopeGenerator service for AI-powered generation of discipline-specific scope and deliverables content.
+
+      - path: docs/tech-spec-epic-3.md
+        title: Technical Specification - Epic 3
+        section: Workflows and Sequencing
+        snippet: Documents Scope Generation Flow including context assembly, AI prompt building, and auto-save strategies.
+
+      - path: docs/epics.md
+        title: Product Epics
+        section: Epic 3 Story 3.4
+        snippet: Original acceptance criteria and business requirements for AI-assisted scope and deliverables generation.
+
+      - path: docs/architecture.md
+        title: System Architecture
+        section: AI/LLM
+        snippet: Details Vercel AI SDK integration with OpenAI GPT-4 for content generation with creative outputs.
+    </docs>
+
+    <code>
+      - path: assemble-app/src/lib/ai/scopeGeneratorPrompts.ts
+        kind: ai-prompt
+        symbol: buildScopePrompt, buildDeliverablesPrompt
+        lines: entire-file
+        reason: AI prompts and context builders for generating discipline-specific or trade-specific scope and deliverables. Core logic for AC-23, AC-24.
+
+      - path: assemble-app/src/app/actions/consultant.ts
+        kind: server-action
+        symbol: generateScopeAction, generateDeliverablesAction
+        lines: entire-file
+        reason: Server actions implementing AI-powered scope and deliverables generation using GPT-4. Implements AC-21.
+
+      - path: assemble-app/src/components/cards/sections/ScopeSection.tsx
+        kind: component
+        symbol: ScopeSection
+        lines: entire-file
+        reason: UI component implementing scope editor with AI generation button, drag-drop document support, auto-save, and manual editing. Implements AC-19 through AC-26.
+
+      - path: assemble-app/src/components/cards/sections/DeliverablesSection.tsx
+        kind: component
+        symbol: DeliverablesSection
+        lines: entire-file
+        reason: UI component implementing deliverables editor with AI generation button, drag-drop document support, auto-save, and manual editing. Implements AC-19 through AC-26.
+    </code>
+
+    <dependencies>
+      - node:
+          openai: "^4.x" (GPT-4 API client)
+          @vercel/ai: "^3.x" (AI SDK integration)
+          react-hook-form: "^7.x" (Form state management)
+          zod: "^3.x" (Validation schemas)
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - AI generation must use temperature=0.7 for creative variety while maintaining professionalism
+    - Max tokens: 1500 to allow comprehensive content generation
+    - Auto-save debounce timer: 30 seconds during active editing
+    - Immediate save required on section collapse or navigation away
+    - All AI-generated content must remain fully editable (no lock states)
+    - Support document formats for context: PDF, Word (.docx), Plain text (.txt)
+    - Context assembly must include: Plan Card details, Objectives, Staging, Discipline/Trade, existing content, document text
+    - Generate discipline-specific content for 36 consultant types
+    - Generate trade-specific content for 20 contractor trades
+    - Content stored in ConsultantSection.content JSON field
+    - Save status indicator must show "Saving" and "Saved" states to user
+    - Use server actions for all AI operations (not client-side API calls)
+  </constraints>
+
+  <interfaces>
+    - name: generateScopeAction
+      kind: Server Action
+      signature: "async function generateScopeAction(params: { discipline: string; projectName?: string; existingContent?: string; documentContext?: string }): Promise<string>"
+      path: assemble-app/src/app/actions/consultant.ts
+
+    - name: generateDeliverablesAction
+      kind: Server Action
+      signature: "async function generateDeliverablesAction(params: { discipline: string; projectName?: string; existingContent?: string; documentContext?: string }): Promise<string>"
+      path: assemble-app/src/app/actions/consultant.ts
+
+    - name: buildScopePrompt
+      kind: Utility Function
+      signature: "function buildScopePrompt(params: { discipline: string; projectName?: string; existingContent?: string; documentContext?: string }): string"
+      path: assemble-app/src/lib/ai/scopeGeneratorPrompts.ts
+
+    - name: buildDeliverablesPrompt
+      kind: Utility Function
+      signature: "function buildDeliverablesPrompt(params: { discipline: string; projectName?: string; existingContent?: string; documentContext?: string }): string"
+      path: assemble-app/src/lib/ai/scopeGeneratorPrompts.ts
+  </interfaces>
+
+  <tests>
+    <standards>
+      Project uses Jest for unit testing and Playwright for E2E testing. All AI interactions should be mocked in tests. Auto-save functionality requires timer mocking.
+    </standards>
+
+    <locations>
+      - assemble-app/src/__tests__/ (unit tests)
+      - assemble-app/e2e/ (end-to-end tests)
+    </locations>
+
+    <ideas>
+      Unit Tests:
+      - Test context gathering logic for various disciplines and trades (AC-23, AC-24)
+      - Test prompt building with and without document context (AC-22, AC-24)
+      - Test AI generation with mocked OpenAI responses (AC-21, AC-23)
+      - Test auto-save debounce timer (30 seconds) with jest.useFakeTimers (AC-26)
+      - Test save on unmount behavior (AC-26)
+
+      Integration Tests:
+      - Test AI generation workflow with mocked GPT-4 responses (AC-21, AC-23)
+      - Test auto-save triggers correct database operations (AC-26)
+      - Test document drag-drop extracts text and includes in AI context (AC-22, AC-24)
+      - Test manual editing after AI generation preserves changes (AC-25)
+
+      E2E Tests:
+      - Complete workflow: open section → AI generate → manual edit → verify auto-save (AC-21, AC-25, AC-26)
+      - Drag-drop document workflow: drag PDF → verify AI includes document context → verify generated content (AC-22, AC-24)
+      - Verify save status indicator shows "Saving" and "Saved" states (AC-26)
+      - Test useEffect cleanup prevents memory leaks on navigation (AC-26)
+    </ideas>
+  </tests>
+</story-context>

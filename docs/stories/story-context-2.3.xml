@@ -1,0 +1,174 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.3</storyId>
+    <title>AI Document Processing - Text Extraction</title>
+    <status>Drafted</status>
+    <generatedAt>2025-10-26</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/2-3-ai-document-processing-text-extraction.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to integrate AI for document processing</iWant>
+    <soThat>we can extract text from uploaded documents</soThat>
+    <tasks>
+      - Set up OpenAI API and install pdf-parse dependency
+      - Create extraction service in lib/ai/extractors.ts
+      - Implement PDF text extraction using pdf-parse
+      - Implement GPT-4 Vision integration for OCR
+      - Build context-aware prompts for different card sections
+      - Parse structured data from AI responses
+      - Create document queue processor service
+      - Handle retries and failures with logging
+      - Add server action for manual retry
+      - Create tests for extraction pipeline
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC1">Integration with OpenAI GPT-4 Vision API functional</criterion>
+    <criterion id="AC2">PDF text extraction works for digital PDFs (non-scanned)</criterion>
+    <criterion id="AC3">OCR capability extracts text from scanned documents and images</criterion>
+    <criterion id="AC4">Processing completes within 10 seconds for 15MB files</criterion>
+    <criterion id="AC5">Extracted text stored in database extractedText field</criterion>
+    <criterion id="AC6">Error handling logs failed extractions with retry capability</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>Functional Requirements - Document Repository</section>
+        <snippet>FR003: System shall extract relevant information from uploaded documents using AI (OCR for scanned docs, text extraction for digital PDFs). FR004: System shall auto-populate Plan Card sections with AI-extracted information.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Decision Architecture</title>
+        <section>Decision Summary - AI/LLM</section>
+        <snippet>AI/LLM: Vercel AI SDK + OpenAI GPT-4 (Best document understanding, construction knowledge). File Processing: GPT-4 Vision + pdf-parse (Unified OCR/extraction approach).</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Technical Specification: Epic 2</title>
+        <section>Services and Modules</section>
+        <snippet>AIExtractor: Extracts text and data using GPT-4 Vision. Inputs: Document URL, extraction prompt. Outputs: Structured extraction result. Location: lib/ai/extractors.ts. DocumentProcessor: Orchestrates document upload, processing, and extraction. Location: server/services/documentProcessor.ts.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/2-3-ai-document-processing-text-extraction.md</path>
+        <title>Story 2.3 Specification</title>
+        <section>Technical Details</section>
+        <snippet>Complete implementation specifications including extraction service interfaces, queue worker design, context-aware prompt building, confidence calculation, and retry mechanisms.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>src/lib/ai/openai.ts</path>
+        <kind>config</kind>
+        <symbol>openai, FIRM_EXTRACTION_MODEL</symbol>
+        <lines>1-21</lines>
+        <reason>Existing OpenAI client configuration to reuse for document extraction. Exports configured openai client and model constants.</reason>
+      </artifact>
+      <artifact>
+        <path>prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>Document</symbol>
+        <lines>87-129</lines>
+        <reason>Document model with extractedText (Text), extractedData (Json), and processingStatus fields already defined. Target for storing extraction results.</reason>
+      </artifact>
+      <artifact>
+        <path>src/app/actions/card.ts</path>
+        <kind>server-action</kind>
+        <symbol>various card actions</symbol>
+        <lines>1-100</lines>
+        <reason>Example of Server Actions pattern used throughout the codebase. Follow same error handling and auth patterns.</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="openai" version="^6.7.0" installed="true"/>
+        <package name="pdf-parse" version="latest" installed="false" required="true"/>
+        <package name="@prisma/client" version="6.0.1" installed="true"/>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Must reuse existing OpenAI client from src/lib/ai/openai.ts - do not create new OpenAI instance</constraint>
+    <constraint>Processing must complete within 10 seconds for 15MB files (NFR requirement from Epic 2 tech spec)</constraint>
+    <constraint>Store extraction results in existing Document model fields: extractedText, extractedData, processingStatus</constraint>
+    <constraint>Follow Server Actions pattern for all database operations (see src/app/actions/card.ts for reference)</constraint>
+    <constraint>Use GPT-4 Vision API for OCR capabilities (architecture decision ADR-003)</constraint>
+    <constraint>Implement structured logging using existing patterns for monitoring extraction performance</constraint>
+    <constraint>Queue processing should handle 5 documents concurrently as specified in story technical details</constraint>
+    <constraint>Retry failed extractions with maximum 3 attempts before marking as failed</constraint>
+    <constraint>Context-aware prompts must support all card section types: details, objectives, staging, risk, stakeholders, scope, deliverables, fee_structure</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>ExtractionRequest</name>
+      <kind>TypeScript Interface</kind>
+      <signature>
+interface ExtractionRequest {
+  documentUrl: string;
+  documentType: 'pdf' | 'image' | 'scanned';
+  targetFields?: string[];
+  context?: 'details' | 'objectives' | 'staging' | 'risk' | 'stakeholders' | 'scope' | 'deliverables' | 'fee_structure';
+}
+      </signature>
+      <path>lib/ai/extractors.ts</path>
+    </interface>
+    <interface>
+      <name>ExtractionResult</name>
+      <kind>TypeScript Interface</kind>
+      <signature>
+interface ExtractionResult {
+  success: boolean;
+  extractedText: string;
+  structuredData?: Record&lt;string, any&gt;;
+  confidence: number;
+  processingTime: number;
+}
+      </signature>
+      <path>lib/ai/extractors.ts</path>
+    </interface>
+    <interface>
+      <name>extractFromDocument</name>
+      <kind>Async Function</kind>
+      <signature>async function extractFromDocument(request: ExtractionRequest): Promise&lt;ExtractionResult&gt;</signature>
+      <path>lib/ai/extractors.ts</path>
+    </interface>
+    <interface>
+      <name>OpenAI Chat Completions API</name>
+      <kind>External API</kind>
+      <signature>openai.chat.completions.create({ model, messages, max_tokens, temperature })</signature>
+      <path>Imported from 'openai' package</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Project uses Vitest for unit tests and Playwright for E2E tests. Unit tests should be co-located with source files in __tests__ directories. Mock external API calls using vi.mock(). Follow AAA pattern (Arrange, Act, Assert). Test coverage expected for all public interfaces and error paths.
+    </standards>
+
+    <locations>
+      - src/lib/ai/__tests__/extractors.test.ts
+      - src/server/services/__tests__/documentProcessor.test.ts
+      - e2e/document-extraction.spec.ts
+    </locations>
+
+    <ideas>
+      <test criterion="AC1">Mock OpenAI API and verify GPT-4 Vision integration calls correct model with proper parameters</test>
+      <test criterion="AC2">Test pdf-parse extraction with sample digital PDF, verify text content extracted correctly</test>
+      <test criterion="AC3">Mock GPT-4 Vision response for scanned document, verify OCR text extraction</test>
+      <test criterion="AC4">Performance test with 15MB file, measure processing time stays under 10 seconds</test>
+      <test criterion="AC5">Integration test verifying extractedText and extractedData saved to Document model</test>
+      <test criterion="AC6">Test retry mechanism with failed extraction, verify error logging and retry attempts</test>
+    </ideas>
+  </tests>
+</story-context>

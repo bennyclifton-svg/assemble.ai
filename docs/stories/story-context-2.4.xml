@@ -1,0 +1,257 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.4</storyId>
+    <title>AI Auto-Population for Cards</title>
+    <status>drafted</status>
+    <generatedAt>2025-10-26</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/2-4-ai-auto-population-for-cards.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>AI to auto-populate Card sections from uploaded documents</iWant>
+    <soThat>I don't have to manually enter project information</soThat>
+    <tasks>
+      <task>Create auto-population service to map extracted data to card fields</task>
+      <task>Implement drag-drop on card sections with visual feedback</task>
+      <task>Add AI Generate button with document selector dialog</task>
+      <task>Implement visual indicators for AI-populated fields (highlight + badge)</task>
+      <task>Create special field components (Stakeholder list, Stage list, Fee structure table)</task>
+      <task>Implement "Add to Documents" toggle with auto-filing logic</task>
+      <task>Handle different card types (Plan, Consultant, Contractor)</task>
+      <task>Track AI population history in database</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC1">Documents draggable into Plan Card sections (Details, Objectives, Staging, Risk, Stakeholders)</criterion>
+    <criterion id="AC2">Documents draggable into Consultant/Contractor Card sections (Scope, Deliverables, Fee Structure)</criterion>
+    <criterion id="AC3">AI analyzes document and extracts section-relevant information</criterion>
+    <criterion id="AC4">AI populates appropriate fields based on extracted content (Plan Card fields including stakeholder details, Consultant/Contractor fields)</criterion>
+    <criterion id="AC5">AI-populated fields show visual highlight indicator</criterion>
+    <criterion id="AC6">User can review and edit all AI-populated content</criterion>
+    <criterion id="AC7">"AI Generate" button provides alternative to drag-drop</criterion>
+    <criterion id="AC8">"Add to Documents" button (default ON) allows files to be added to Document Repository</criterion>
+    <criterion id="AC9">Files dropped in Plan Card sections auto-file to Plan/Misc/ when "Add to Documents" is enabled</criterion>
+    <criterion id="AC10">Files dropped in Consultant/Contractor Cards auto-file to respective Misc folders</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>AI Auto-Population Features</section>
+        <snippet>AI analyzes uploaded documents and auto-populates card fields, reducing manual data entry and improving accuracy through intelligent extraction</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>System Architecture</title>
+        <section>AI Services Layer</section>
+        <snippet>Document processing pipeline extracts structured data from PDFs and images, mapping content to card section fields based on context</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>Auto-Population Flow</section>
+        <snippet>Document extraction service provides structured data that maps to card fields through context-aware transformation layer</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/2-3-ai-document-processing-text-extraction.md</path>
+        <title>Story 2.3 - AI Document Processing</title>
+        <section>Extraction Service Implementation</section>
+        <snippet>extractFromDocument() returns structured data with projectName, address, stakeholders, objectives, stages, risks, scopeItems, deliverables, feeStructure</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>src/lib/ai/extractors.ts</path>
+        <kind>service</kind>
+        <symbol>extractFromDocument</symbol>
+        <lines>46-95</lines>
+        <reason>Core extraction service that provides structured data for auto-population. Returns ExtractionResult with extractedText and structuredData</reason>
+      </artifact>
+      <artifact>
+        <path>src/lib/ai/extractors.ts</path>
+        <kind>interface</kind>
+        <symbol>ExtractionResult</symbol>
+        <lines>17-41</lines>
+        <reason>Defines structure of extracted data including projectName, address, zoning, objectives, stages, risks, stakeholders, scopeItems, deliverables, feeStructure</reason>
+      </artifact>
+      <artifact>
+        <path>src/app/actions/document.ts</path>
+        <kind>server-action</kind>
+        <symbol>uploadDocuments</symbol>
+        <lines>34-140</lines>
+        <reason>Existing document upload action that can be extended for auto-filing logic. Handles file validation, S3 upload, and document queue creation</reason>
+      </artifact>
+      <artifact>
+        <path>src/app/actions/document.ts</path>
+        <kind>server-action</kind>
+        <symbol>retryExtraction</symbol>
+        <lines>320-389</lines>
+        <reason>Pattern for handling document processing operations with error handling and queue management</reason>
+      </artifact>
+      <artifact>
+        <path>src/components/cards/Section.tsx</path>
+        <kind>component</kind>
+        <symbol>Section</symbol>
+        <reason>Existing card section component that needs drag-drop capabilities added</reason>
+      </artifact>
+      <artifact>
+        <path>src/components/cards/PlanCard.tsx</path>
+        <kind>component</kind>
+        <symbol>PlanCard</symbol>
+        <reason>Plan card component with Details, Objectives, Staging, Risk, Stakeholders sections that need auto-population</reason>
+      </artifact>
+      <artifact>
+        <path>src/components/cards/ConsultantCard.tsx</path>
+        <kind>component</kind>
+        <symbol>ConsultantCard</symbol>
+        <reason>Consultant card component with Scope, Deliverables, Fee Structure sections that need auto-population</reason>
+      </artifact>
+      <artifact>
+        <path>prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>AIPopulationHistory</symbol>
+        <lines>157-169</lines>
+        <reason>Database model for tracking AI-populated fields with documentId, cardId, section, populatedFields, createdBy, createdAt</reason>
+      </artifact>
+      <artifact>
+        <path>prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>Document</symbol>
+        <lines>87-129</lines>
+        <reason>Document model with extractedText and extractedData fields populated by Story 2.3 extraction service</reason>
+      </artifact>
+      <artifact>
+        <path>prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>Card</symbol>
+        <lines>25-38</lines>
+        <reason>Card model with type (PLAN, CONSULTANT, CONTRACTOR) and sections relation</reason>
+      </artifact>
+      <artifact>
+        <path>prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>Section</symbol>
+        <lines>52-66</lines>
+        <reason>Section model with name, data (Json), and items relation for storing populated field data</reason>
+      </artifact>
+      <artifact>
+        <path>prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>Item</symbol>
+        <lines>68-85</lines>
+        <reason>Item model with data (Json) for storing individual field values within sections</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="react-dnd" version="^16.0.1">Drag and drop library for document drop zones</package>
+        <package name="react-dnd-html5-backend" version="^16.0.1">HTML5 backend for react-dnd</package>
+        <package name="@dnd-kit/core" version="^6.3.1">Alternative drag and drop library (already in use)</package>
+        <package name="@dnd-kit/sortable" version="^10.0.0">Sortable utilities for dnd-kit</package>
+        <package name="@dnd-kit/utilities" version="^3.2.2">Utility functions for dnd-kit</package>
+        <package name="@prisma/client" version="^6.0.1">Database ORM for data operations</package>
+        <package name="next" version="15.5.6">Next.js framework with App Router</package>
+        <package name="react" version="19.1.0">React library</package>
+        <package name="zod" version="^3.25.76">Schema validation</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Use existing extractFromDocument() service from Story 2.3 - DO NOT reimplement extraction logic</constraint>
+    <constraint>Maintain Next.js App Router patterns with Server Actions for data mutations</constraint>
+    <constraint>All database operations must use Prisma ORM with proper error handling</constraint>
+    <constraint>Follow existing card component structure and patterns</constraint>
+    <constraint>Use @dnd-kit library (already installed) for drag-drop implementation instead of react-dnd to maintain consistency</constraint>
+    <constraint>Server Actions must include Clerk authentication checks before database operations</constraint>
+    <constraint>AI-populated fields must be editable and not locked after population</constraint>
+    <constraint>Track all AI population events in AIPopulationHistory table for audit trail</constraint>
+    <constraint>Auto-filing logic must respect document repository folder structure from Story 2.1</constraint>
+    <constraint>UI components must use existing shadcn/ui components (Button, Input, Badge, Dialog, Checkbox)</constraint>
+    <constraint>All paths in code must be project-relative, not absolute</constraint>
+    <constraint>Handle missing or incomplete extracted data gracefully without errors</constraint>
+    <constraint>Merge AI-populated data with existing section data, don't replace entirely</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>autoPopulateFields</name>
+      <kind>Server Action</kind>
+      <signature>async function autoPopulateFields(documentId: string, targetCardId: string, targetSection: string): Promise&lt;ActionResult&lt;PopulatedFields&gt;&gt;</signature>
+      <path>src/app/actions/document.ts</path>
+      <description>Main server action that retrieves extracted data from document and maps it to card section fields based on card type and section name</description>
+    </interface>
+    <interface>
+      <name>mapExtractedDataToFields</name>
+      <kind>Function</kind>
+      <signature>function mapExtractedDataToFields(extractedData: any, cardType: string, section: string): Record&lt;string, any&gt;</signature>
+      <path>src/app/actions/document.ts (helper)</path>
+      <description>Maps extracted document data to card-specific field structure based on card type (PLAN/CONSULTANT/CONTRACTOR) and section name</description>
+    </interface>
+    <interface>
+      <name>updateCardSection</name>
+      <kind>Function</kind>
+      <signature>async function updateCardSection(card: any, sectionName: string, fields: Record&lt;string, any&gt;, userId: string): Promise&lt;any&gt;</signature>
+      <path>src/app/actions/document.ts (helper)</path>
+      <description>Updates or creates card section with AI-populated fields, merging with existing data</description>
+    </interface>
+    <interface>
+      <name>ActionResult</name>
+      <kind>TypeScript Interface</kind>
+      <signature>interface ActionResult&lt;T&gt; { success: boolean; data?: T; error?: { code: string; message: string } }</signature>
+      <path>src/app/actions/document.ts</path>
+      <description>Standard result type for all server actions, already defined in document.ts</description>
+    </interface>
+    <interface>
+      <name>extractFromDocument</name>
+      <kind>Service Function</kind>
+      <signature>async function extractFromDocument(request: ExtractionRequest): Promise&lt;ExtractionResult&gt;</signature>
+      <path>src/lib/ai/extractors.ts</path>
+      <description>Story 2.3 extraction service that provides structured data for auto-population</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Use Vitest testing framework (already configured in vitest.config.ts). Server Actions should be tested with mocked Prisma client and Clerk auth. Component tests should use React Testing Library. Mock external dependencies (OpenAI, file uploads). Test drag-drop interactions with @dnd-kit test utilities.
+    </standards>
+    <locations>
+      - Server Action tests: src/app/actions/__tests__/document.test.ts
+      - Component tests: src/components/cards/__tests__/*.test.tsx
+      - Integration tests can be placed in src/__tests__/integration/
+    </locations>
+    <ideas>
+      <idea ac="AC1,AC2">Test drag-drop zones render correctly for all card sections (Plan, Consultant, Contractor)</idea>
+      <idea ac="AC3,AC4">Test autoPopulateFields action maps extracted data correctly for each card type and section combination</idea>
+      <idea ac="AC3,AC4">Test field mapping handles missing/incomplete extracted data without errors</idea>
+      <idea ac="AC4">Test stakeholder array mapping with role, organization, name, email, mobile fields</idea>
+      <idea ac="AC4">Test objectives mapping separates by type (functional, quality, budget, program)</idea>
+      <idea ac="AC4">Test staging data maps with name, startDate, endDate, description</idea>
+      <idea ac="AC4">Test risk mapping includes title, description, mitigation, probability, impact</idea>
+      <idea ac="AC4">Test scope and deliverables mapping for Consultant/Contractor cards</idea>
+      <idea ac="AC4">Test fee structure mapping with stages and amounts</idea>
+      <idea ac="AC5">Test AI-populated fields display visual highlight (blue ring) and AI badge</idea>
+      <idea ac="AC6">Test all AI-populated fields remain editable after population</idea>
+      <idea ac="AC6">Test user can modify AI-populated values without restrictions</idea>
+      <idea ac="AC7">Test AI Generate button opens document selector dialog</idea>
+      <idea ac="AC7">Test document selection triggers auto-population flow</idea>
+      <idea ac="AC8">Test "Add to Documents" checkbox defaults to checked/ON</idea>
+      <idea ac="AC8">Test toggling "Add to Documents" affects upload behavior</idea>
+      <idea ac="AC9,AC10">Test auto-filing logic routes documents to correct folders based on card type</idea>
+      <idea ac="AC9">Test Plan Card drops auto-file to Plan/Misc/ folder</idea>
+      <idea ac="AC10">Test Consultant/Contractor drops auto-file to respective discipline/trade Misc folders</idea>
+      <idea ac="ALL">Test AIPopulationHistory records are created with correct documentId, cardId, section, populatedFields</idea>
+      <idea ac="ALL">Test error handling when document has no extracted data yet</idea>
+      <idea ac="ALL">Test error handling when extraction service fails</idea>
+      <idea ac="ALL">Test merging AI data with existing section data preserves user-entered values</idea>
+    </ideas>
+  </tests>
+</story-context>

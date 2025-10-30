@@ -1,0 +1,250 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.1</storyId>
+    <title>Document Repository Structure</title>
+    <status>in-progress</status>
+    <generatedAt>2025-10-27</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/2-1-document-repository-structure.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a user</asA>
+    <iWant>a structured document repository</iWant>
+    <soThat>I can organize all project documents systematically</soThat>
+    <tasks>
+      <task>Create Document model in Prisma schema with all required fields</task>
+      <task>Display folder tree in sidebar below main card navigation menu</task>
+      <task>Create document repository service (tRPC routers for getTree, getByPath)</task>
+      <task>Initialize default folder structure on project creation with only active consultants/contractors</task>
+      <task>Implement folder navigation UI with view toggle (List Full/List Active, default: List Active with all expanded) and bulk operations</task>
+      <task>Implement drag-drop directly onto folders and drop zone</task>
+      <task>Implement Tier 1 and Tier 2 folder management (add/delete/reorder)</task>
+      <task>Implement multi-select with Shift+click and Ctrl+click for bulk operations</task>
+      <task>Add progress indicators for bulk actions</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-1">Two-tier categorization system implemented with folder hierarchy visible in Documents Card</criterion>
+    <criterion id="AC-2">Default folder structure created with all specified Tier 1 and Tier 2 folders, only list active Consultants List and active Contractors List</criterion>
+    <criterion id="AC-3">Toggle between "List Full" (all folders) and "List Active" (only folders with files), default to list active and all expanded</criterion>
+    <criterion id="AC-4">Bulk drag-and-drop files directly onto any folder, or within drop zone</criterion>
+    <criterion id="AC-5">Tier 1 and Tier 2 folders can be added, deleted, and reordered via drag-and-drop</criterion>
+    <criterion id="AC-6">Tier 1 and Tier 2 folders can collapse/expand individually or bulk collapse/expand all</criterion>
+    <criterion id="AC-7">Bulk collapse/expand all folders functionality</criterion>
+    <criterion id="AC-8">Folder hierarchy with tree view to be displayed in the sidebar, below current menu showing main cards</criterion>
+    <criterion id="AC-9">Navigate through folders with functional breadcrumb trail</criterion>
+    <criterion id="AC-10">Database tracks document metadata including name, path, size (bytes), upload date, tags array, version number, checksum</criterion>
+    <criterion id="AC-11">Shift+click or Ctrl+click to select multiple files for bulk operations (delete, move to alternate folder)</criterion>
+    <criterion id="AC-12">Progress indicators for bulk actions and low-latency folder tree interactions</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>Document Repository Requirements</section>
+        <snippet>FR006-FR010 define document repository with two-tier categorization (9 Tier 1 folders including Admin, Finance, Plan, Consultants, Scheme, Detail, Procure, Contractors, Delivery), file uploads up to 15MB, document metadata tracking (revision, tags, version history), and multi-select functionality using Shift+click and Ctrl+click patterns. Only active consultants/contractors shown.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture Decision Document</title>
+        <section>Project Structure and Framework Decisions</section>
+        <snippet>Next.js 15 with App Router, TypeScript, Tailwind CSS 4, Prisma ORM with PostgreSQL. File storage via AWS S3. Drag-and-drop using dnd-kit library. Server Actions + tRPC for API layer.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Technical Specification - Epic 2</title>
+        <section>Document Repository Structure</section>
+        <snippet>Document model with path hierarchy, S3 storage, metadata tracking. Default folder structure includes Admin, Finance, Plan, Consultants (only active disciplines), Scheme, Detail, Procure, Contractors (only active trades), Delivery. Folder tree displayed in sidebar. DocumentCard component with breadcrumb navigation, view toggle, multi-select, drag-drop zones. tRPC procedures for getTree and getByPath.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>assemble-app/prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>Document</symbol>
+        <lines>88-130</lines>
+        <reason>Existing Document model with path, S3 storage, metadata, AI processing fields. Needs verification that all AC fields are present (tags array, version, checksum confirmed).</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/components/cards/DocumentCard.tsx</path>
+        <kind>component</kind>
+        <symbol>DocumentCard</symbol>
+        <lines>all</lines>
+        <reason>Existing DocumentCard component - folder tree should be in sidebar, main card shows selected folder contents with breadcrumb navigation, view toggle, multi-select, and bulk operations.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/components/ui/DragDropZone.tsx</path>
+        <kind>component</kind>
+        <symbol>DragDropZone</symbol>
+        <lines>all</lines>
+        <reason>Existing drag-drop component - can be reused for folder drop zones.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/server/services/documentProcessor.ts</path>
+        <kind>service</kind>
+        <symbol>documentProcessor</symbol>
+        <lines>all</lines>
+        <reason>Existing document processing service - may contain document creation logic.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/server/services/s3.ts</path>
+        <kind>service</kind>
+        <symbol>s3</symbol>
+        <lines>all</lines>
+        <reason>S3 service for file storage operations - needed for document uploads.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/components/ui/toggle-group.tsx</path>
+        <kind>component</kind>
+        <symbol>ToggleGroup</symbol>
+        <lines>all</lines>
+        <reason>UI component for view mode toggle (List Full vs List Active).</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/components/ui/checkbox.tsx</path>
+        <kind>component</kind>
+        <symbol>Checkbox</symbol>
+        <lines>all</lines>
+        <reason>UI component for multi-select checkboxes on files/folders.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/components/ui/progress.tsx</path>
+        <kind>component</kind>
+        <symbol>Progress</symbol>
+        <lines>all</lines>
+        <reason>UI component for progress indicators during bulk operations.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/components/cards/CardPanel.tsx</path>
+        <kind>component</kind>
+        <symbol>CardPanel</symbol>
+        <lines>all</lines>
+        <reason>Base card panel component - provides consistent card structure.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/components/workspace/NavigationSidebar.tsx</path>
+        <kind>component</kind>
+        <symbol>NavigationSidebar</symbol>
+        <lines>all</lines>
+        <reason>Sidebar component where folder tree should be displayed below main card navigation menu.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <npm>
+        <package>@dnd-kit/core</package>
+        <version>^6.3.1</version>
+        <usage>Drag-and-drop foundation for folder reordering and file drops</usage>
+      </npm>
+      <package>@dnd-kit/sortable</package>
+      <version>^10.0.0</version>
+      <usage>Sortable lists for Tier 2 folder reordering</usage>
+    </dependencies>
+      <npm>
+        <package>@aws-sdk/client-s3</package>
+        <version>^3.917.0</version>
+        <usage>S3 operations for document storage</usage>
+      </npm>
+      <npm>
+        <package>@prisma/client</package>
+        <version>^6.0.1</version>
+        <usage>Database access for Document model</usage>
+      </npm>
+      <npm>
+        <package>lucide-react</package>
+        <version>^0.548.0</version>
+        <usage>Icons for folder tree, chevrons, drag handles</usage>
+      </npm>
+      <npm>
+        <package>zustand</package>
+        <version>^5.0.8</version>
+        <usage>State management for expanded folders, view mode</usage>
+      </npm>
+  </artifacts>
+
+  <constraints>
+    <constraint>Follow three-tier architecture: Card → Section → Item hierarchy from Epic 1</constraint>
+    <constraint>All database operations must use Prisma ORM with type-safe queries</constraint>
+    <constraint>Use Server Actions for mutations, tRPC for queries (per architecture decision)</constraint>
+    <constraint>Implement soft deletes (deletedAt field) - no hard deletes</constraint>
+    <constraint>All file paths must be project-relative, not absolute</constraint>
+    <constraint>Folder structure must be ordered: Admin(1), Finance(2), Plan(3), Consultants(4), Scheme(5), Detail(6), Procure(7), Contractors(8), Delivery(9)</constraint>
+    <constraint>Consultant disciplines must be in alphabetical order with only active disciplines</constraint>
+    <constraint>Contractor trades must be in alphabetical order with only active trades</constraint>
+    <constraint>Display folder tree in sidebar below the main card navigation menu</constraint>
+    <constraint>Default view mode is "List Active" with all folders expanded</constraint>
+    <constraint>Use Tailwind CSS for styling - no custom CSS files</constraint>
+    <constraint>Components must be responsive to 1920x1080 minimum resolution</constraint>
+    <constraint>Prepare for future auto-filing requirements (Story 2.6) - path structure must support context-based filing</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Document.getTree</name>
+      <kind>tRPC procedure</kind>
+      <signature>getTree(input: { projectId: string }): Promise&lt;DocumentTreeNode[]&gt;</signature>
+      <path>server/api/routers/document.ts</path>
+      <description>Returns hierarchical folder tree for DocumentCard display</description>
+    </interface>
+    <interface>
+      <name>Document.getByPath</name>
+      <kind>tRPC procedure</kind>
+      <signature>getByPath(input: { projectId: string, path: string }): Promise&lt;Document[]&gt;</signature>
+      <path>server/api/routers/document.ts</path>
+      <description>Returns documents in specific folder path</description>
+    </interface>
+    <interface>
+      <name>DocumentTreeNode</name>
+      <kind>TypeScript type</kind>
+      <signature>interface DocumentTreeNode { name: string; path: string; tier: 1 | 2; order: number; fileCount: number; children?: DocumentTreeNode[]; }</signature>
+      <path>types/document.ts</path>
+      <description>Hierarchical folder structure for tree view</description>
+    </interface>
+    <interface>
+      <name>uploadDocuments</name>
+      <kind>Server Action</kind>
+      <signature>async uploadDocuments(formData: FormData): Promise&lt;ActionResult&lt;Document[]&gt;&gt;</signature>
+      <path>app/actions/document.ts</path>
+      <description>Handles file uploads with drag-drop to folders</description>
+    </interface>
+    <interface>
+      <name>bulkDeleteDocuments</name>
+      <kind>Server Action</kind>
+      <signature>async bulkDeleteDocuments(documentIds: string[]): Promise&lt;ActionResult&lt;void&gt;&gt;</signature>
+      <path>app/actions/document.ts</path>
+      <description>Handles bulk deletion of selected documents</description>
+    </interface>
+    <interface>
+      <name>bulkMoveDocuments</name>
+      <kind>Server Action</kind>
+      <signature>async bulkMoveDocuments(documentIds: string[], targetPath: string): Promise&lt;ActionResult&lt;Document[]&gt;&gt;</signature>
+      <path>app/actions/document.ts</path>
+      <description>Moves multiple selected documents to a different folder</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Use Vitest for unit/integration tests, React Testing Library for component tests, Playwright for E2E tests. Mock external services (S3, database) using Mock Service Worker (MSW). Test coverage minimum 80% for critical paths. All acceptance criteria must have at least one automated test.</standards>
+    <locations>assemble-app/src/__tests__/*, assemble-app/e2e/*</locations>
+    <ideas>
+      <testIdea acRef="AC-1, AC-2">Unit test: Verify default folder structure generation includes all 9 Tier 1 folders (Admin, Finance, Plan, Consultants, Scheme, Detail, Procure, Contractors, Delivery) with correct order, and only active consultant/contractor folders from Plan Card lists</testIdea>
+      <testIdea acRef="AC-3">Component test: Toggle view mode between "List Full" and "List Active" - verify empty folders hidden in Active mode, default state is "List Active" with all folders expanded</testIdea>
+      <testIdea acRef="AC-4">E2E test: Drag multiple files onto a specific folder and verify they appear in that folder's path; also test drop zone functionality</testIdea>
+      <testIdea acRef="AC-5">Component test: Add/delete/reorder both Tier 1 and Tier 2 folders via drag-drop with confirmation for deletes</testIdea>
+      <testIdea acRef="AC-6, AC-7">Component test: Individual folder expand/collapse maintains state; bulk expand all opens all folders; bulk collapse all closes all folders</testIdea>
+      <testIdea acRef="AC-8">Component test: Verify folder tree view displays in sidebar below main card navigation menu</testIdea>
+      <testIdea acRef="AC-9">Component test: Breadcrumb shows navigation path and allows clicking to navigate</testIdea>
+      <testIdea acRef="AC-10">Unit test: Document model stores all required metadata fields (name, path, size, upload date, tags array, version, checksum)</testIdea>
+      <testIdea acRef="AC-10">Integration test: Create document and verify checksum calculation and metadata persistence</testIdea>
+      <testIdea acRef="AC-11">E2E test: Multi-select files using Shift+click for range and Ctrl+click for individual selection, then bulk delete or drag to different folder</testIdea>
+      <testIdea acRef="AC-12">Performance test: Verify progress indicators display during bulk operations and folder tree interactions remain under 100ms</testIdea>
+      <testIdea acRef="Edge Case">Test uploading files to consultant and contractor discipline folders (e.g., Consultants/Architect, Contractors/Plumber)</testIdea>
+      <testIdea acRef="Edge Case">Test folder tree rendering performance with 1000+ documents across all folders</testIdea>
+      <testIdea acRef="Edge Case">Test special characters in file names and folder names (spaces, unicode, etc.)</testIdea>
+    </ideas>
+  </tests>
+</story-context>

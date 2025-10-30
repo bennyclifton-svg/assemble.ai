@@ -1,0 +1,250 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>3.8</storyId>
+    <title>Tender Release and Submission Tracking</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/3-8-tender-release-and-submission-tracking.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to track tender release dates and submissions received</iWant>
+    <soThat>I can manage the tender timeline</soThat>
+    <tasks>
+      - Create column-based submission layout (AC: 50)
+      - Implement submission upload (AC: 51, 52)
+      - Add visual indicators (AC: 53)
+      - Implement auto-filing (AC: 54, 55)
+      - Add delete and reload functionality (AC: 56)
+      - Enable evaluation sections (AC: 57)
+      - Create database schema
+      - Testing
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="50">Submissions organized in columns (1 column per firm, side-by-side)</criterion>
+    <criterion id="51">Upload submissions per firm with automatic date stamp (manual override available)</criterion>
+    <criterion id="52">Multiple submissions per firm supported (incremental numbering)</criterion>
+    <criterion id="53">Visual indicator when submission received</criterion>
+    <criterion id="54">For Consultants: Auto-filing to Documents/[Consultant]/[Discipline]/filename.pdf</criterion>
+    <criterion id="55">For Contractors: Auto-filing to Documents/[Contractor]/[Trade]/filename.pdf</criterion>
+    <criterion id="56">User can delete submissions and reload new submission</criterion>
+    <criterion id="57">Evaluation sections enabled when submission received for that firm</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Consultant &amp; Contractor Management</title>
+        <section>Data Models - TenderSubmission</section>
+        <snippet>TenderSubmission model tracks firmId, submissionNumber (incremental), uploadDate (auto-timestamped), documentPath (S3 path), fileName. Foreign key to Firm with composite index on firmId + submissionNumber.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Consultant &amp; Contractor Management</title>
+        <section>Workflows - Tender Submission Flow</section>
+        <snippet>System organizes submissions in columns (1 per firm, side-by-side). User uploads submission → system timestamps with current date (manual override) → increments submission number → files to Documents/[Consultant]/[Discipline] or Documents/[Contractor]/[Trade]. User can delete and reload submissions.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Consultant &amp; Contractor Management</title>
+        <section>Document Repository Integration</section>
+        <snippet>Files Consultant submissions to Documents/[Consultant]/[Discipline]/filename.pdf. Files Contractor submissions to Documents/[Contractor]/[Trade]/filename.pdf. Uses DocumentService from Epic 2. Supports delete and reload operations.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic Breakdown</title>
+        <section>Epic 3 Story 3.8</section>
+        <snippet>Set tender release and closing dates. Upload submissions per firm with automatic date stamp. Multiple submissions per firm supported. Visual indicator when submission received. Auto-filing to Documents folders.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR027-FR030</section>
+        <snippet>System shall receive and store tender submissions following defined price structure. System shall provide side-by-side comparison of tender submissions. System shall support multiple submission rounds per tender.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Decision Architecture</title>
+        <section>File Storage</section>
+        <snippet>AWS S3 SDK v3 for file storage. Signed URLs with 1-hour expiry for security. File uploads up to 15MB. MIME type validation before processing.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>assemble-app/src/components/cards/sections/TenderReleaseSection.tsx</path>
+        <kind>component</kind>
+        <symbol>TenderReleaseSection</symbol>
+        <lines>1-18</lines>
+        <reason>Placeholder component for tender release tracking. Needs full implementation for submission upload, date management, and column layout per firm.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/server/services/s3.ts</path>
+        <kind>service</kind>
+        <symbol>getUploadUrl</symbol>
+        <lines>52-77</lines>
+        <reason>S3 service for generating signed upload URLs. Use for tender submission uploads with 1-hour expiry. Already configured with AWS credentials and bucket.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/server/services/documentProcessor.ts</path>
+        <kind>service</kind>
+        <symbol>processDocument</symbol>
+        <lines>41-80</lines>
+        <reason>Document processing service for AI extraction. Reference for document upload patterns and queue processing.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>Firm</symbol>
+        <lines>187-212</lines>
+        <reason>Firm model already includes rfis and addendums relations. Need to add tenderSubmissions relation for new TenderSubmission model.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>Document</symbol>
+        <lines>88-130</lines>
+        <reason>Document model shows S3 storage pattern: s3Key, s3Bucket, url, size, mimeType, checksum. Follow same pattern for submission documents.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <ecosystem name="npm">
+        <package name="@aws-sdk/client-s3" version="^3.917.0" />
+        <package name="@aws-sdk/s3-request-presigner" version="^3.917.0" />
+        <package name="react-dropzone" version="^14.3.8" />
+        <package name="date-fns" version="^3.0.0" />
+        <package name="@prisma/client" version="^6.0.1" />
+        <package name="zod" version="^3.25.76" />
+        <package name="lucide-react" version="^0.548.0" />
+        <package name="clsx" version="^2.1.1" />
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Preserve original filename from upload - do not auto-generate names</constraint>
+    <constraint>Implement soft-delete pattern - set deletedAt timestamp, do not physically delete records or S3 files</constraint>
+    <constraint>Submission numbering auto-increments per firm - gaps allowed after deletion (maintain audit trail)</constraint>
+    <constraint>File size limit: 15MB maximum per PRD NFR requirement</constraint>
+    <constraint>MIME type validation required before upload per PRD NFR012</constraint>
+    <constraint>Use signed S3 URLs with 1-hour expiry per PRD NFR013</constraint>
+    <constraint>Consultant filing path: Documents/[Consultant]/[Discipline]/filename.pdf</constraint>
+    <constraint>Contractor filing path: Documents/[Contractor]/[Trade]/filename.pdf</constraint>
+    <constraint>Column layout must support up to 6 firms side-by-side at 1920x1080 resolution</constraint>
+    <constraint>Auto-timestamp with current date, allow manual date override via date picker</constraint>
+    <constraint>Evaluation section (from Story 3.1) enabled only when firm has submission</constraint>
+    <constraint>All database operations must include audit fields: createdBy, updatedBy, deletedAt</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>TenderSubmission Model (to be created)</name>
+      <kind>prisma-model</kind>
+      <signature>
+model TenderSubmission {
+  id               String   @id @default(cuid())
+  firmId           String
+  firm             Firm     @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  submissionNumber Int
+  uploadDate       DateTime @default(now())
+  documentPath     String   // S3 key
+  fileName         String   // Original filename
+  s3Bucket         String
+  url              String   // S3 signed URL
+  size             Int      // File size in bytes
+  mimeType         String
+  createdAt        DateTime @default(now())
+  createdBy        String
+  updatedAt        DateTime @updatedAt
+  updatedBy        String
+  deletedAt        DateTime?
+
+  @@index([firmId, submissionNumber])
+  @@index([firmId])
+}
+      </signature>
+      <path>assemble-app/prisma/schema.prisma (to be added)</path>
+    </interface>
+    <interface>
+      <name>TenderReleaseSection Component Props</name>
+      <kind>react-component</kind>
+      <signature>
+interface TenderReleaseSectionProps {
+  projectId: string;
+  disciplineId?: string;  // For consultant cards
+  tradeId?: string;       // For contractor cards
+  cardType: 'CONSULTANT' | 'CONTRACTOR';
+}
+      </signature>
+      <path>assemble-app/src/components/cards/sections/TenderReleaseSection.tsx</path>
+    </interface>
+    <interface>
+      <name>S3 Upload Service</name>
+      <kind>service-function</kind>
+      <signature>
+getUploadUrl(key: string, expiresIn?: number): Promise&lt;string&gt;
+getDownloadUrl(key: string, expiresIn?: number): Promise&lt;string&gt;
+uploadFile(key: string, file: Buffer): Promise&lt;void&gt;
+      </signature>
+      <path>assemble-app/src/server/services/s3.ts</path>
+    </interface>
+    <interface>
+      <name>Submission Upload API (tRPC - to be created)</name>
+      <kind>trpc-mutation</kind>
+      <signature>
+recordSubmission: protectedProcedure
+  .input(z.object({
+    firmId: z.string(),
+    file: z.any(),  // File object
+    uploadDate: z.date().optional(),
+    cardType: z.enum(['CONSULTANT', 'CONTRACTOR']),
+    disciplineOrTradeId: z.string(),
+  }))
+  .mutation(async ({ ctx, input }) => {...})
+
+deleteSubmission: protectedProcedure
+  .input(z.object({
+    submissionId: z.string(),
+  }))
+  .mutation(async ({ ctx, input }) => {...})
+
+getSubmissionsByFirm: protectedProcedure
+  .input(z.object({
+    firmId: z.string(),
+  }))
+  .query(async ({ ctx, input }) => {...})
+      </signature>
+      <path>assemble-app/src/server/api/routers/submission.ts (to be created)</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Testing uses Vitest for unit/integration tests. Component tests verify column layout, upload flow, date handling. Integration tests validate S3 upload, database persistence, auto-numbering logic. E2E tests with Playwright cover complete submission workflow from upload to evaluation enablement. Mock S3 service in unit tests using vi.mock(). Test file paths follow pattern: consultant vs contractor paths.
+    </standards>
+    <locations>
+      <location>assemble-app/src/components/cards/sections/__tests__/TenderReleaseSection.test.tsx</location>
+      <location>assemble-app/tests/integration/tender-submission.test.ts</location>
+      <location>assemble-app/e2e/tender-submission-workflow.spec.ts</location>
+      <location>assemble-app/src/server/services/__tests__/submissionService.test.ts</location>
+    </locations>
+    <ideas>
+      <idea criteriaId="50">Unit test: Render column layout with 3 firms, verify 3 columns displayed side-by-side</idea>
+      <idea criteriaId="51">Integration test: Upload submission, verify auto-timestamp with current date, test manual date override</idea>
+      <idea criteriaId="52">Integration test: Upload 3 submissions for same firm, verify incremental numbering (1, 2, 3)</idea>
+      <idea criteriaId="53">Unit test: Verify visual indicators (checkmark icon, submission count badge, upload date display)</idea>
+      <idea criteriaId="54">Integration test: Upload consultant submission, verify filed to Documents/Consultant/[Discipline]/filename.pdf</idea>
+      <idea criteriaId="55">Integration test: Upload contractor submission, verify filed to Documents/Contractor/[Trade]/filename.pdf</idea>
+      <idea criteriaId="56">E2E test: Upload submission, delete it, verify soft-delete (deletedAt set), upload replacement</idea>
+      <idea criteriaId="57">Integration test: Upload submission for firm, verify Tender Evaluation section enabled for that firm</idea>
+      <idea criteriaId="all">E2E test: Complete workflow - upload submission → verify S3 upload → check database → verify evaluation enabled</idea>
+      <idea criteriaId="52">Unit test: Delete submission #2, upload new submission, verify next number is 4 (gaps allowed)</idea>
+      <idea criteriaId="51,52">Integration test: Mock S3 service, test upload failure handling and retry logic</idea>
+    </ideas>
+  </tests>
+</story-context>

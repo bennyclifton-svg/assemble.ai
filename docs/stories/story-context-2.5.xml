@@ -1,0 +1,243 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.5</storyId>
+    <title>Document and Section Selection for Tender Packages</title>
+    <status>Ready</status>
+    <generatedAt>2025-10-26</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/2-5-document-and-section-selection-for-tender-packages.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>select document sets and card sections for inclusion in tender packages</iWant>
+    <soThat>I can specify exactly what contractors should reference and include relevant content</soThat>
+    <tasks>
+      <task id="1">Create selection state management (Zustand store for selections, support multi-select patterns, persist selections)</task>
+      <task id="2">Build document selector (table with checkboxes, Shift+click range selection, Ctrl+click multi-selection, tag filtering)</task>
+      <task id="3">Build section selector (tabbed interface for cards, checkboxes for sections, show item counts, expandable item lists)</task>
+      <task id="4">Implement persistence (save selections to database, associate with tender package, load previous selections)</task>
+      <task id="5">Create document schedule (generate list without files, include in tender output, format for printing)</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC1">Multi-select documents using Shift+click for range selection</criterion>
+    <criterion id="AC2">Multi-select documents using Ctrl+click for individual selection</criterion>
+    <criterion id="AC3">Plan Card Sections & Items selectable with checkbox UI for tender package inclusion</criterion>
+    <criterion id="AC4">Consultant Card Sections & Items selectable with checkbox UI (for all 37 disciplines)</criterion>
+    <criterion id="AC5">Contractor Card Sections & Items selectable with checkbox UI (for all 20 trades)</criterion>
+    <criterion id="AC6">Create document schedules without copying actual files</criterion>
+    <criterion id="AC7">Tag documents with multiple tags for filtering</criterion>
+    <criterion id="AC8">Selected documents and sections associate with specific tender packages</criterion>
+    <criterion id="AC9">Document and section selections persist across sessions</criterion>
+    <criterion id="AC10">Sections & Items content included in tender package generation (not just references)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>Document Selection for Tender</section>
+        <snippet>Document selection flow with multi-select using Shift+click for range selection and Ctrl+click for multi-selection. Selected documents associated with tender package. Document schedule generated without copying files. TenderPackageDocument model tracks selections with includeInSchedule flag and order.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>Plan, Consultant and Contractor Section & Item Selection</section>
+        <snippet>Section & Item tree loaded with checkbox UI. Users select using individual clicks, Shift+click for range, Ctrl+click for multi-selection. Selected Sections & Items associated with tender package. Content included in tender package output (not just references).</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>Data Models - TenderPackageDocument</section>
+        <snippet>Model tracks tender package document selections with fields: tenderPackageId, documentId, includeInSchedule (boolean, default true), order (int). Unique constraint on [tenderPackageId, documentId].</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>Functional Requirements - Document Management</section>
+        <snippet>FR009: System shall allow users to select disparate document sets for tender packages. FR010: System shall support multi-select functionality using Shift+click (range selection) and Ctrl+click (individual selection) for bulk actions on all items.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>Tender Package Generation</section>
+        <snippet>FR016-FR017: Generate consultant/contractor tender packages from user-selected Plan Card sections, Consultant/Contractor Card sections, and document schedules. FR018: AI creates sharp, project-specific tender content. FR019: Complete generation in < 30 seconds.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>User Journey - Assemble Tender Package</section>
+        <snippet>User navigates to Consultant Card/Tender Pack section, selects relevant Plan Card sections, Consultant Card sections, document sets from Documents Card, and Release/Submission dates. Clicks Generate Tender Package. Documents do not need to be retrieved, just a document schedule is created.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>assemble-app/src/stores/workspaceStore.ts</path>
+        <kind>store</kind>
+        <symbol>useWorkspaceStore</symbol>
+        <lines>1-305</lines>
+        <reason>Existing Zustand store pattern with persist middleware for managing workspace state. Demonstrates pattern for section collapse state management (collapsedSections: Record&lt;projectId, Record&lt;sectionId, boolean&gt;&gt;) and consultant/contractor toggle tracking. Reference implementation for creating similar selection store.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>TenderPackageDocument</symbol>
+        <lines>131-143</lines>
+        <reason>Existing model for document-tender package associations. Fields: tenderPackageId, documentId, includeInSchedule (boolean), order (int). Unique constraint on [tenderPackageId, documentId]. Must be used for persisting document selections.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>Card</symbol>
+        <lines>25-38</lines>
+        <reason>Card model with type enum (PLAN, CONSULTANT, CONTRACTOR). Has sections relation. Used for querying cards and sections for selection UI.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>Section</symbol>
+        <lines>52-66</lines>
+        <reason>Section model with cardId foreign key, name, order, and items relation. Sections will be selectable via checkboxes for tender package inclusion.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>Item</symbol>
+        <lines>68-85</lines>
+        <reason>Item model with sectionId, order, type, data (JSON), and locked flag. Items content must be included in tender packages (not just references per AC10).</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>Document</symbol>
+        <lines>95-129</lines>
+        <reason>Document model with projectId, path, name, displayName, size, tags (String[]), processingStatus. Has tenderPackageDocuments relation. Supports tag filtering (AC7).</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/app/actions/document.ts</path>
+        <kind>server-action</kind>
+        <symbol>getDocuments</symbol>
+        <lines>164</lines>
+        <reason>Existing Server Action for retrieving documents by projectId. Returns documents with metadata. Should be used to populate document selector.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/app/actions/document.ts</path>
+        <kind>server-action</kind>
+        <symbol>updateDocumentTags</symbol>
+        <lines>285</lines>
+        <reason>Existing Server Action for updating document tags. Supports AC7 requirement for tagging documents with multiple tags for filtering.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="zustand" version="^5.0.8">State management library - used for creating selectionStore</package>
+        <package name="@dnd-kit/core" version="^6.3.1">Drag and drop toolkit - may be used for document row interactions</package>
+        <package name="@dnd-kit/sortable" version="^10.0.0">Sortable utilities for @dnd-kit - for reordering selected items</package>
+        <package name="lucide-react" version="^0.548.0">Icon library - for checkboxes, selection indicators</package>
+        <package name="clsx" version="^2.1.1">Utility for conditional classNames - for selected row styling</package>
+        <package name="tailwind-merge" version="^3.3.1">Tailwind class merging - for dynamic selection styles</package>
+        <package name="@prisma/client" version="^6.0.1">Database ORM - for TenderPackageDocument persistence</package>
+        <package name="next" version="15.5.6">Next.js framework - Server Actions for save operations</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Use existing TenderPackageDocument model from Prisma schema for document selections - do NOT create new models</constraint>
+    <constraint>Must create TenderPackageSection model or similar for section/item selections persistence (AC8, AC9)</constraint>
+    <constraint>Selection state must persist across sessions using Zustand persist middleware (AC9)</constraint>
+    <constraint>Document selector must support Shift+click for range selection and Ctrl+click for multi-selection (AC1, AC2)</constraint>
+    <constraint>Section selector must support checkboxes for Plan, Consultant (37 disciplines), and Contractor (20 trades) cards (AC3, AC4, AC5)</constraint>
+    <constraint>Document schedule must NOT copy actual files, only create references (AC6)</constraint>
+    <constraint>Must support tagging documents with multiple tags for filtering (AC7)</constraint>
+    <constraint>Sections & Items content must be INCLUDED in tender package generation, not just references (AC10)</constraint>
+    <constraint>Follow established Server Actions pattern with Clerk auth and ActionResult&lt;T&gt; return type</constraint>
+    <constraint>Use shadcn/ui Checkbox, Badge, Table components for consistent UI</constraint>
+    <constraint>Selections must associate with specific tender packages (AC8) - likely via tenderPackageId parameter</constraint>
+    <constraint>Consultant disciplines: 37 total (including Architect, Structural, MEP, Town Planner, Cost Planner, etc.)</constraint>
+    <constraint>Contractor trades: 20 total per PRD requirements</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>selectionStore (to be created)</name>
+      <kind>Zustand store</kind>
+      <signature>
+        interface SelectionState {
+          selectedDocuments: Set&lt;string&gt;;
+          lastSelectedDocument: string | null;
+          selectedSections: {
+            plan: Set&lt;string&gt;;
+            consultant: Map&lt;string, Set&lt;string&gt;&gt;;
+            contractor: Map&lt;string, Set&lt;string&gt;&gt;;
+          };
+          toggleDocument: (id: string, shiftKey: boolean, ctrlKey: boolean) =&gt; void;
+          toggleSection: (cardType: string, discipline: string, sectionId: string) =&gt; void;
+          clearSelection: () =&gt; void;
+          getSelectionForTender: () =&gt; TenderSelection;
+        }
+      </signature>
+      <path>assemble-app/src/stores/selectionStore.ts (to be created)</path>
+    </interface>
+    <interface>
+      <name>saveTenderSelection</name>
+      <kind>Server Action</kind>
+      <signature>
+        async function saveTenderSelection(
+          tenderPackageId: string,
+          selection: TenderSelection
+        ): Promise&lt;ActionResult&lt;void&gt;&gt;
+      </signature>
+      <path>assemble-app/src/app/actions/tender.ts (to be created)</path>
+    </interface>
+    <interface>
+      <name>getDocuments</name>
+      <kind>Server Action (existing)</kind>
+      <signature>
+        async function getDocuments(projectId: string): Promise&lt;ActionResult&lt;Document[]&gt;&gt;
+      </signature>
+      <path>assemble-app/src/app/actions/document.ts</path>
+    </interface>
+    <interface>
+      <name>getSectionsByCard</name>
+      <kind>Server Action (possibly needed)</kind>
+      <signature>
+        async function getSectionsByCard(
+          projectId: string,
+          cardType: CardType,
+          discipline?: string
+        ): Promise&lt;ActionResult&lt;Section[]&gt;&gt;
+      </signature>
+      <path>assemble-app/src/app/actions/card.ts (check if exists, otherwise create)</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: Vitest (v4.0.3) for unit and integration tests. Follow established patterns from auto-populate.test.ts with mocked Clerk auth and Prisma client. Component tests should mock Server Actions. E2E tests for multi-select interactions using Vitest browser mode or similar.
+    </standards>
+    <locations>
+      <location>assemble-app/src/app/actions/__tests__/ - Server Action tests</location>
+      <location>assemble-app/src/stores/__tests__/ - Zustand store tests</location>
+      <location>assemble-app/src/components/__tests__/ - Component tests</location>
+    </locations>
+    <ideas>
+      <test id="AC1">Unit test: Shift+click range selection in document selector - select items 1,5 with shift → items 1-5 all selected</test>
+      <test id="AC2">Unit test: Ctrl+click multi-selection - select items 1,3,5 individually → only those 3 selected</test>
+      <test id="AC3">Component test: Plan Card sections render with checkboxes, clicking toggles selection state</test>
+      <test id="AC4">Integration test: Load all 37 consultant disciplines, verify each has selectable sections</test>
+      <test id="AC5">Integration test: Load all 20 contractor trades, verify each has selectable sections</test>
+      <test id="AC6">Unit test: saveTenderSelection creates TenderPackageDocument records without copying files</test>
+      <test id="AC7">Component test: Tag filter - select tags filters document list correctly</test>
+      <test id="AC8">Integration test: Save selection associates documents and sections with specific tenderPackageId</test>
+      <test id="AC9">Unit test: Zustand persist middleware - selections survive page reload</test>
+      <test id="AC10">Integration test: Retrieve sections for tender package includes Item.data content, not just IDs</test>
+      <test id="store">Unit test: SelectionStore range selection logic with edge cases (empty list, same item, reverse order)</test>
+      <test id="ui">E2E test: Complete flow - select docs with shift+click, select sections via checkboxes, save, reload, verify persistence</test>
+    </ideas>
+  </tests>
+</story-context>

@@ -1,0 +1,267 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Project {
+  id        String     @id @default(cuid())
+  name      String
+  userId    String
+  cards     Card[]
+  documents Document[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  deletedAt DateTime?
+}
+
+model Card {
+  id        String    @id @default(cuid())
+  projectId String
+  project   Project   @relation(fields: [projectId], references: [id])
+  type      CardType
+  sections  Section[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String
+  updatedBy String
+  deletedAt DateTime?
+
+  @@index([projectId, type])
+}
+
+enum CardType {
+  PLAN
+  CONSULTANT
+  CONTRACTOR
+  PROCURE
+  COST_PLANNING
+  SCHEME_DESIGN
+  DETAIL_DESIGN
+  DOCUMENTS
+  DELIVER
+}
+
+model Section {
+  id        String    @id @default(cuid())
+  cardId    String
+  card      Card      @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  name      String
+  order     Int
+  items     Item[]
+  tenderPackageSections TenderPackageSection[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String
+  updatedBy String
+  deletedAt DateTime?
+
+  @@index([cardId, order])
+}
+
+model Item {
+  id           String    @id @default(cuid())
+  sectionId    String
+  section      Section   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  order        Int
+  type         String    // 'text', 'number', 'date', 'toggle', 'status_icons'
+  data         Json      // Flexible storage
+  sourceCardId String?   // Cross-card reference for data flow
+  sourceItemId String?   // Source item reference for traceability
+  locked       Boolean   @default(false) // Immutability flag for tender packages
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  createdBy    String
+  updatedBy    String
+  deletedAt    DateTime?
+
+  @@index([sectionId, order])
+}
+
+model Document {
+  id            String    @id @default(cuid())
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id])
+
+  // Hierarchy and storage
+  path          String    // e.g., "Consultants/Architect"
+  name          String    // Original filename
+  displayName   String    // User-friendly name
+
+  // S3 Storage
+  s3Key         String    @unique
+  s3Bucket      String
+  url           String    // S3 URL
+  size          Int       // File size in bytes
+  mimeType      String
+  checksum      String    // MD5 hash for integrity
+
+  // AI Processing
+  extractedText String?   @db.Text
+  extractedData Json?     // Structured data from AI
+  processingStatus String @default("pending") // pending, processing, completed, failed
+
+  // Metadata
+  tags          String[]
+  version       Int       @default(1)
+  metadata      Json?     // Additional metadata like auto-filing context
+
+  // Audit fields
+  createdAt     DateTime  @default(now())
+  createdBy     String
+  updatedAt     DateTime  @updatedAt
+  updatedBy     String
+  deletedAt     DateTime?
+
+  // Relations
+  tenderPackageDocuments TenderPackageDocument[]
+  aiPopulationHistories  AIPopulationHistory[]
+
+  @@index([projectId])
+  @@index([path])
+  @@index([processingStatus])
+}
+
+model TenderPackageDocument {
+  id               String   @id @default(cuid())
+  tenderPackageId  String
+  documentId       String
+  document         Document @relation(fields: [documentId], references: [id])
+  includeInSchedule Boolean @default(true)
+  order            Int
+  createdAt        DateTime @default(now())
+  createdBy        String
+
+  @@unique([tenderPackageId, documentId])
+  @@index([tenderPackageId])
+}
+
+model TenderPackageSection {
+  id              String   @id @default(cuid())
+  tenderPackageId String
+  sectionId       String
+  section         Section  @relation(fields: [sectionId], references: [id])
+  cardType        String   // 'PLAN', 'CONSULTANT', 'CONTRACTOR'
+  discipline      String?  // For consultant/contractor cards (e.g., 'architect', 'electrical')
+  createdAt       DateTime @default(now())
+  createdBy       String
+
+  @@unique([tenderPackageId, sectionId])
+  @@index([tenderPackageId])
+  @@index([cardType])
+}
+
+model DocumentQueue {
+  id         String   @id @default(cuid())
+  documentId String   @unique
+  status     String   // pending, processing, completed, failed
+  retryCount Int      @default(0)
+  error      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([status])
+}
+
+model AIPopulationHistory {
+  id              String   @id @default(cuid())
+  documentId      String
+  document        Document @relation(fields: [documentId], references: [id])
+  cardId          String
+  section         String
+  populatedFields Json
+  createdAt       DateTime @default(now())
+  createdBy       String
+
+  @@index([documentId])
+  @@index([cardId])
+}
+
+model Firm {
+  id               String     @id @default(cuid())
+  projectId        String
+  consultantCardId String?
+  contractorCardId String?
+  entity           String
+  abn              String?
+  address          String?
+  contact          String?
+  email            String?
+  mobile           String?
+  shortListed      Boolean    @default(false)
+  displayOrder     Int
+  rfis             Rfi[]
+  addendums        Addendum[]
+  createdAt        DateTime   @default(now())
+  createdBy        String
+  updatedAt        DateTime   @updatedAt
+  updatedBy        String
+  deletedAt        DateTime?
+
+  @@index([projectId])
+  @@index([consultantCardId])
+  @@index([contractorCardId])
+  @@index([displayOrder])
+}
+
+model DisciplineData {
+  id            String    @id @default(cuid())
+  projectId     String
+  disciplineId  String    // e.g., 'architect', 'structural', 'mep'
+  scope         String?   @db.Text
+  deliverables  String?   @db.Text
+  createdAt     DateTime  @default(now())
+  createdBy     String
+  updatedAt     DateTime  @updatedAt
+  updatedBy     String
+  deletedAt     DateTime?
+
+  @@unique([projectId, disciplineId])
+  @@index([projectId])
+  @@index([disciplineId])
+}
+
+model Rfi {
+  id           String    @id @default(cuid())
+  firmId       String
+  firm         Firm      @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  title        String
+  dateReceived DateTime?
+  isReceived   Boolean   @default(false)
+  documentPath String?
+  displayOrder Int
+  createdAt    DateTime  @default(now())
+  createdBy    String
+  updatedAt    DateTime  @updatedAt
+  updatedBy    String
+  deletedAt    DateTime?
+
+  @@index([firmId])
+  @@index([displayOrder])
+}
+
+model Addendum {
+  id           String    @id @default(cuid())
+  firmId       String
+  firm         Firm      @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  title        String
+  dateReleased DateTime?
+  isReleased   Boolean   @default(false)
+  documentPath String?
+  displayOrder Int
+  createdAt    DateTime  @default(now())
+  createdBy    String
+  updatedAt    DateTime  @updatedAt
+  updatedBy    String
+  deletedAt    DateTime?
+
+  @@index([firmId])
+  @@index([displayOrder])
+}

@@ -1,0 +1,211 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>5</storyId>
+    <title>Fee Structure Management</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/3-5-fee-structure-management.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a user</asA>
+    <iWant>to manage fee structures for tender packages</iWant>
+    <soThat>suppliers can provide structured pricing</soThat>
+    <tasks>
+      - Create Fee Structure section UI (AC: 28, 29, 30)
+        - Implement table component for fee structure
+        - Support hierarchical rows (categories and line items)
+        - Add/delete line item functionality
+        - Inline editing of item descriptions and quantities
+      - Implement "Retrieve from Cost Planning" (AC: 27)
+        - Add "Retrieve from Cost Planning" button to Fee Structure section
+        - Create retrieveFeeStructure server action
+        - Detect card type (Consultant or Contractor)
+        - Query Cost Planning Card for appropriate Tier 2 section
+        - Check if Cost Planning Card exists and if specified Tier 2 section exists
+        - If either doesn't exist: Do nothing, allow manual creation
+        - If both exist: Transform Tier 3 cost items to fee structure format
+        - Populate fee structure table with retrieved data
+      - Prepare for tender package generation (AC: 31)
+        - Store fee structure in database
+        - Define export format for tender packages
+        - Create API endpoint for fee structure retrieval
+      - Testing
+        - Unit test: Fee structure table component
+        - Integration test: Retrieve from Cost Planning
+        - E2E test: Manual fee structure creation
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="27">"Retrieve from Cost Planning" button pulls existing structure from specific Tier 2 section:
+      - For Consultants: Pull from Tier 2 "Consultants" section
+      - For Contractors: Pull from Tier 2 "Construction" section
+      - If Cost Planning Card or specified Tier 2 section not yet created, do nothing and allow manual creation
+    </criterion>
+    <criterion id="28">Manual creation of fee structure tables</criterion>
+    <criterion id="29">Add/delete line items in fee structure</criterion>
+    <criterion id="30">Hierarchical structure support (categories and items)</criterion>
+    <criterion id="31">Fee structure flows to tender package generation</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>Consultant &amp; Contractor Cards - Fee Structure</section>
+        <snippet>FR011: System shall provide Consultant Card with predefined sections including Fee Structure. FR012: System shall provide Contractor Card with predefined sections including Fee Structure. Users can populate Fee Structure by clicking 'Retrieve from Cost Planning' or building table from scratch.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>Cost Planning Card - Tier 2/Tier 3 Structure</section>
+        <snippet>FR015l: Two-tiered financial hierarchy: Tier 2 (Cost Group/Section) and Tier 3 (Cost Item/Line Item). FR015m: Default Tier 2 sections include Consultants and Construction. FR015r: Users can add, delete, rename Tier 3 Cost Items.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>User Scenario - Define Scope and Deliverables</section>
+        <snippet>User populates Fee Structure by either clicking 'Retrieve from Cost Planning' or building a Fee Structure table from scratch. In Tender Package assembly, user selects Fee Structure section for inclusion in generated tender.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification - Epic 3</title>
+        <section>Services and Modules - FeeStructureService</section>
+        <snippet>FeeStructureService: Retrieves and manages fee structures. Transforms Cost Planning data to Fee tables. Located at src/server/services/feeStructure.ts</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification - Epic 3</title>
+        <section>APIs and Interfaces - retrieveFeeStructure</section>
+        <snippet>retrieveFeeStructure API retrieves fee structure from Cost Planning Card. Transforms Cost Planning Tier 3 items to fee structure format. Returns FeeStructure object for population into consultant/contractor cards.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification - Epic 3</title>
+        <section>Story 3.5 Acceptance Criteria</section>
+        <snippet>AC 27-31 cover: Retrieve from Cost Planning with Tier 2 targeting (Consultants/Construction), manual fee structure creation, add/delete line items, hierarchical structure support, and fee structure flow to tender packages.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epics Breakdown</title>
+        <section>Epic 3 - Story 3.5</section>
+        <snippet>Story 3.5: Fee Structure Management. Original acceptance criteria defined. References integration with Cost Planning Card (Epic 5) for Tier 2/Tier 3 structure retrieval.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>assemble-app/src/components/cards/sections/FeeStructureSection.tsx</path>
+        <kind>component</kind>
+        <symbol>FeeStructureSection</symbol>
+        <lines>1-17</lines>
+        <reason>Existing placeholder component for Fee Structure section - requires full implementation with Excel-like table UI (inline editing, keyboard navigation), retrieval button, and CRUD operations. Consider using contentEditable or input cells for inline editing with Tab/Enter navigation.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/components/cards/ConsultantCard.tsx</path>
+        <kind>component</kind>
+        <symbol>ConsultantCard</symbol>
+        <lines>36-47</lines>
+        <reason>ConsultantCard defines all section structure including fee-structure section. Shows pattern for section rendering and state management to follow</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>Section, Item</symbol>
+        <lines>52-86</lines>
+        <reason>Database models for storing card sections and items. Fee structure data will be stored as Items with type and JSON data fields</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>DisciplineData</symbol>
+        <lines>212-227</lines>
+        <reason>Model for storing discipline-specific data like scope and deliverables. May need extension or similar pattern for fee structure storage</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="react" version="19.1.0" />
+        <package name="next" version="15.5.6" />
+        <package name="@prisma/client" version="^6.0.1" />
+        <package name="zod" version="^3.25.76" />
+        <package name="react-hook-form" version="^7.65.0" />
+        <package name="zustand" version="^5.0.8" />
+        <package name="lucide-react" version="^0.548.0" />
+        <package name="@dnd-kit/core" version="^6.3.1" />
+        <package name="@dnd-kit/sortable" version="^10.0.0" />
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Follow established patterns from existing sections (ScopeSection, DeliverablesSection, FirmsSection)
+    - Use Prisma models (Section/Item with JSON data) for fee structure storage
+    - Implement hierarchical structure using nested data format in Item.data JSON field
+    - Server actions pattern: create actions in assemble-app/src/app/actions directory
+    - Use Zod for validation schemas
+    - React Hook Form for form state management
+    - Follow existing component structure with TypeScript strict mode
+    - Fee structure must integrate with tender package generation workflow (Epic 4)
+    - Graceful handling: if Cost Planning Card doesn't exist, enable manual creation without errors
+    - Card type detection: determine Consultant vs Contractor context from disciplineId or card type
+    - CRITICAL UX: Excel-like interface - fast, intuitive inline editing for all manual operations
+    - CRITICAL UX: Inline cell editing - click to edit any cell directly without modal dialogs
+    - CRITICAL UX: Keyboard navigation - Tab/Enter to move between cells, Escape to cancel edit
+    - CRITICAL UX: Fast add/delete - minimal clicks to add rows, instant delete with keyboard shortcuts
+    - CRITICAL UX: Visual feedback - highlight active cell, show hover states, instant save indicators
+    - CRITICAL UX: Spreadsheet feel - table should feel responsive like Excel/Google Sheets, not a traditional form
+  </constraints>
+  <interfaces>
+    <interface>
+      <name>FeeStructureSectionProps</name>
+      <kind>React Component Props</kind>
+      <signature>{ projectId: string; disciplineId: string; }</signature>
+      <path>assemble-app/src/components/cards/sections/FeeStructureSection.tsx:3-6</path>
+    </interface>
+    <interface>
+      <name>retrieveFeeStructure</name>
+      <kind>Server Action (to be implemented)</kind>
+      <signature>async function retrieveFeeStructure(cardId: string, costPlanningId: string): Promise&lt;FeeStructure&gt;</signature>
+      <path>docs/tech-spec-epic-3.md - defined in specification, needs implementation</path>
+    </interface>
+    <interface>
+      <name>Section/Item Models</name>
+      <kind>Prisma Database Models</kind>
+      <signature>Section { id, cardId, name, order, items[] }; Item { id, sectionId, order, type, data: Json }</signature>
+      <path>assemble-app/prisma/schema.prisma:52-86</path>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+      Project uses Vitest for unit and integration testing. Test framework: Vitest with @testing-library/react for component tests.
+      Testing patterns: Mock dependencies using vi.mock(), test server actions with mocked Prisma client, test React components with render/screen utilities.
+      Test files located in __tests__ directories alongside source files. Run tests with: npm test (watch mode) or npm run test:run (single run).
+    </standards>
+    <locations>
+      - assemble-app/src/components/**/__tests__/*.test.tsx (component tests)
+      - assemble-app/src/app/actions/__tests__/*.test.ts (server action tests)
+      - assemble-app/src/stores/__tests__/*.test.ts (store tests)
+    </locations>
+    <ideas>
+      <test ac="28,29,30" type="unit">
+        FeeStructureSection component - Test hierarchical table rendering, add/delete line item functionality, inline editing of descriptions and quantities, category vs item row distinction, Excel-like cell editing behavior
+      </test>
+      <test ac="28,29,30" type="unit">
+        Excel-like UX behavior - Test keyboard navigation (Tab/Enter to move cells, Escape to cancel), inline cell editing activation on click, hover states, active cell highlighting, instant save indicators
+      </test>
+      <test ac="27" type="integration">
+        Retrieve from Cost Planning - Test server action retrieveFeeStructure: detect card type (Consultant/Contractor), query correct Tier 2 section (Consultants/Construction), graceful handling when Cost Planning Card or Tier 2 section doesn't exist, successful transformation of Tier 3 items to fee structure format
+      </test>
+      <test ac="31" type="integration">
+        Fee structure storage and retrieval - Test saving fee structure to database as Section/Item records with JSON data, test API endpoint for fee structure retrieval for tender package generation
+      </test>
+      <test ac="28,29,30" type="e2e">
+        Manual fee structure creation - Full user workflow: create table from scratch, add categories and line items using Excel-like interface, edit descriptions/quantities inline, delete items with keyboard shortcuts, verify fast and intuitive interaction, verify persistence
+      </test>
+    </ideas>
+  </tests>
+</story-context>

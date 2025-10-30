@@ -1,0 +1,243 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.6</storyId>
+    <title>Document Filing Automation</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-26</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/2-6-document-filing-automation.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>documents to be automatically filed when uploaded in context</iWant>
+    <soThat>my document repository stays organized</soThat>
+    <tasks>
+      <task id="1" critical="true">Create AutoFiler service with document type detection logic</task>
+      <task id="2" critical="true">Enhance upload handler to accept filing context and call AutoFiler service</task>
+      <task id="3">Build manual override UI for path customization</task>
+      <task id="4">Integrate with Card components for context-aware uploads</task>
+      <task id="5">Add filing history and audit trail</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="1">Invoices auto-file to root Invoices/ folder with firm name in filename. Create the name of Firm if it does not exist.</ac>
+    <ac id="2">When tendering a Consultant: submissions, TRR, RFT, and addendum documents auto-file to Consultants/[Discipline]/</ac>
+    <ac id="3">When tendering a Contractor: submissions, TRR, RFT, and addendum documents auto-file to Contractors/[Trade]/</ac>
+    <ac id="4">Planning documents auto-file to Plan/Misc</ac>
+    <ac id="5">Cost documents auto-file to Plan/Misc</ac>
+    <ac id="6">General documents default to Plan/Misc/</ac>
+    <ac id="7">"Add to Documents" toggle button (default ON) for adding files to Document Repository</ac>
+    <ac id="8">Files dropped in Plan Card sections auto-file to Plan/Misc/</ac>
+    <ac id="9">Files dropped in Consultant/Contractor Cards auto-file to respective Discipline or Trade</ac>
+    <ac id="10">User can manually override auto-filing location if needed</ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Technical Specification for Epic 2: Document Management & AI Processing</title>
+        <section>Document Repository Structure</section>
+        <snippet>Defines the organizational hierarchy for documents including Consultants/[Discipline], Contractors/[Trade], Planning, Cost Plan, Invoices, and Admin/Reports folders. Specifies folder structure and naming conventions.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Technical Specification for Epic 2: Document Management & AI Processing</title>
+        <section>Document Upload & Processing</section>
+        <snippet>Describes the document upload pipeline with S3 storage integration, metadata extraction, and AI processing queue. Includes file validation, duplicate detection, and versioning strategies.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/2-1-document-repository-structure.md</path>
+        <title>Story 2.1: Document Repository Structure</title>
+        <section>Folder Hierarchy</section>
+        <snippet>Details the complete folder structure for project documents, including Consultants with 37 disciplines, Contractors with 20 trades, and other categorized folders for planning, cost, and administration.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/2-2-drag-and-drop-file-upload.md</path>
+        <title>Story 2.2: Drag and Drop File Upload</title>
+        <section>Upload Infrastructure</section>
+        <snippet>Implements drag-and-drop file upload with react-dropzone, S3 integration, and document metadata creation. Provides the foundation for context-aware upload operations.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>assemble-app/src/app/actions/document.ts</path>
+        <kind>server-action</kind>
+        <symbol>uploadDocuments</symbol>
+        <lines>1-150</lines>
+        <reason>Existing document upload Server Action that handles S3 upload, Prisma document creation, and metadata storage - must be enhanced to support filing context</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/services/s3.ts</path>
+        <kind>service</kind>
+        <symbol>uploadToS3</symbol>
+        <lines>1-100</lines>
+        <reason>S3 upload service that generates presigned URLs and handles file uploads - will be used by AutoFiler to upload to determined paths</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/services/supabaseStorage.ts</path>
+        <kind>service</kind>
+        <symbol>uploadToSupabase</symbol>
+        <lines>1-80</lines>
+        <reason>Alternative Supabase storage service - provides storage abstraction layer that AutoFiler should support</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>Document</symbol>
+        <lines>87-129</lines>
+        <reason>Prisma Document model with path, displayName, metadata fields - supports storing auto-filing context and decisions</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>Firm</symbol>
+        <lines>171-194</lines>
+        <reason>Prisma Firm model - used to create firm records automatically when filing invoices if firm doesn't exist (AC1)</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/components/cards/DocumentCard.tsx</path>
+        <kind>component</kind>
+        <symbol>DocumentCard</symbol>
+        <lines>1-200</lines>
+        <reason>Document Card component that provides upload interface - needs integration with filing context</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/components/cards/sections/TenderDocumentSection.tsx</path>
+        <kind>component</kind>
+        <symbol>TenderDocumentSection</symbol>
+        <lines>1-150</lines>
+        <reason>Tender document section in consultant/contractor cards - needs to pass card type and discipline/trade context to auto-filer</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/app/(dashboard)/projects/[id]/documents/documents-client.tsx</path>
+        <kind>component</kind>
+        <symbol>DocumentsClient</symbol>
+        <lines>1-300</lines>
+        <reason>Document repository client component - shows document list and provides upload interface with potential override UI</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="@aws-sdk/client-s3" version="^3.917.0">AWS S3 client for file storage</package>
+        <package name="@aws-sdk/s3-request-presigner" version="^3.917.0">Generate presigned S3 URLs</package>
+        <package name="@prisma/client" version="^6.0.1">Database ORM for document metadata</package>
+        <package name="@supabase/supabase-js" version="^2.76.1">Supabase client for alternative storage</package>
+        <package name="react-dropzone" version="^14.3.8">File upload drag-and-drop interface</package>
+        <package name="@clerk/nextjs" version="^6.34.0">Authentication for upload authorization</package>
+        <package name="zustand" version="^5.0.8">State management for upload UI</package>
+        <package name="lucide-react" version="^0.548.0">Icons for file upload UI</package>
+        <package name="zod" version="^3.25.76">Schema validation for filing context</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Use existing uploadDocuments Server Action from src/app/actions/document.ts - extend rather than replace</constraint>
+    <constraint>AutoFiler service must be created in src/services/autoFiler.ts as a reusable service class</constraint>
+    <constraint>File paths must follow the repository structure: Consultants/[Discipline], Contractors/[Trade], Invoices/, and Plan/Misc/ for general/planning/cost documents</constraint>
+    <constraint>Document metadata field must store auto-filing context for audit trail and potential re-filing (AC requirements)</constraint>
+    <constraint>If firm name does not exist in database when filing invoice, create new Firm record automatically (AC1)</constraint>
+    <constraint>Sequential numbering for invoices, submissions, and addenda must query existing documents via Prisma</constraint>
+    <constraint>Manual override UI must show suggested path BEFORE upload (AC10)</constraint>
+    <constraint>"Add to Documents" toggle must default to ON (AC7)</constraint>
+    <constraint>Document type detection must check both filename patterns AND upload context (section name, card type)</constraint>
+    <constraint>All file uploads must go through Clerk authentication (@clerk/nextjs auth())</constraint>
+    <constraint>Must support both S3 and Supabase storage backends via abstraction layer</constraint>
+    <constraint>UI components must use shadcn/ui components (Checkbox, Button, Input) for consistency</constraint>
+    <constraint>Context-aware uploads must include: uploadLocation, cardType, disciplineOrTrade, sectionName, firmName fields</constraint>
+    <constraint>Filing decisions must be logged with pino logger for troubleshooting</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>FilingContext</name>
+      <kind>TypeScript Interface</kind>
+      <signature>
+interface FilingContext {
+  uploadLocation: 'plan_card' | 'consultant_card' | 'contractor_card' | 'document_card' | 'general';
+  cardType?: 'CONSULTANT' | 'CONTRACTOR';
+  disciplineOrTrade?: string;
+  sectionName?: string;
+  firmName?: string;
+  documentType?: 'invoice' | 'submission' | 'TRR' | 'RFT' | 'addendum' | 'general';
+  addToDocuments?: boolean; // Default true
+}
+      </signature>
+      <path>src/services/autoFiler.ts</path>
+    </interface>
+    <interface>
+      <name>AutoFiler.determineFilingPath</name>
+      <kind>Class Method</kind>
+      <signature>
+async determineFilingPath(
+  fileName: string,
+  context: FilingContext,
+  projectId: string
+): Promise&lt;{ path: string; displayName: string }&gt;
+      </signature>
+      <path>src/services/autoFiler.ts</path>
+    </interface>
+    <interface>
+      <name>uploadDocumentsWithContext</name>
+      <kind>Server Action</kind>
+      <signature>
+export async function uploadDocumentsWithContext(
+  formData: FormData
+): Promise&lt;ActionResult&lt;Document[]&gt;&gt;
+      </signature>
+      <path>src/app/actions/document.ts</path>
+    </interface>
+    <interface>
+      <name>Document Prisma Model</name>
+      <kind>Prisma Model</kind>
+      <signature>
+model Document {
+  id            String    @id @default(cuid())
+  projectId     String
+  path          String    // Auto-filing destination path
+  name          String    // Original filename
+  displayName   String    // Auto-generated display name
+  metadata      Json?     // Stores auto-filing context
+  ...
+}
+      </signature>
+      <path>assemble-app/prisma/schema.prisma</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Use Vitest v4.0.3 as testing framework. Place unit tests in __tests__ directories alongside implementation files. Mock external dependencies (@clerk/nextjs, @prisma/client, AWS S3). Follow existing test patterns from src/stores/__tests__/selectionStore.test.ts and src/app/actions/__tests__/tender.test.ts.
+    </standards>
+    <locations>
+      <location>src/services/__tests__/autoFiler.test.ts</location>
+      <location>src/app/actions/__tests__/document.test.ts</location>
+      <location>src/components/ui/__tests__/FileUploadWithOverride.test.tsx</location>
+    </locations>
+    <ideas>
+      <idea ac="1">Unit test: Detect invoice by filename pattern and file to Invoices/ with sequential numbering</idea>
+      <idea ac="1">Unit test: Invoice filename includes firm name (e.g., "FirmName_Invoice_001.PDF")</idea>
+      <idea ac="2">Unit test: Consultant submission files to Consultants/[Discipline]/ with firm name and number</idea>
+      <idea ac="2">Unit test: TRR, RFT, and addendum detection for consultant card uploads</idea>
+      <idea ac="3">Unit test: Contractor submission files to Contractors/[Trade]/ with firm name and number</idea>
+      <idea ac="3">Unit test: TRR, RFT, and addendum detection for contractor card uploads</idea>
+      <idea ac="1">Unit test: Auto-create Firm record if firm name doesn't exist when filing invoice</idea>
+      <idea ac="4">Unit test: Files with "planning" in name auto-file to Plan/Misc</idea>
+      <idea ac="5">Unit test: Files with "cost" in name auto-file to Plan/Misc</idea>
+      <idea ac="6">Unit test: Unrecognized files default to Plan/Misc/</idea>
+      <idea ac="7">Component test: "Add to Documents" checkbox defaults to checked state</idea>
+      <idea ac="8">Unit test: Files uploaded in Plan Card context file to Plan/Misc/</idea>
+      <idea ac="9">Unit test: Files in Consultant Card file to Consultants/[Discipline]/</idea>
+      <idea ac="9">Unit test: Files in Contractor Card file to Contractors/[Trade]/</idea>
+      <idea ac="10">Component test: Override UI shows suggested path and accepts custom path input</idea>
+      <idea>Integration test: End-to-end upload with context, verify Document record has correct path and metadata</idea>
+      <idea>Integration test: Sequential numbering works correctly for concurrent uploads</idea>
+      <idea>Edge case test: Handle special characters in firm names</idea>
+      <idea>Edge case test: Handle duplicate file names with conflict resolution</idea>
+    </ideas>
+  </tests>
+</story-context>

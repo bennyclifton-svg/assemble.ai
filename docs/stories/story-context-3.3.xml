@@ -1,0 +1,185 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>3.3</storyId>
+    <title>Drag-and-Drop Firm Details</title>
+    <status>Done</status>
+    <generatedAt>2025-10-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/3-3-drag-and-drop-firm-details.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a user</asA>
+    <iWant>to drag and drop firm information to auto-populate</iWant>
+    <soThat>I can quickly set up firm details</soThat>
+    <tasks>
+      - Implement drag-and-drop zone (AC: 12)
+      - Implement paste functionality (AC: 13)
+      - Create AI extraction service (AC: 14)
+      - Auto-populate fields (AC: 15)
+      - Enable manual override (AC: 16)
+      - Add field validation (AC: 17)
+      - Implement "Add to Stakeholders" feature (AC: 18)
+      - Testing (AC: All)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    AC-12: Drag contact vCard, email message, or document with firm details triggers processing
+    AC-13: Alternative: Paste body of text containing firm details
+    AC-14: AI parses and extracts: Entity name, ABN, Address, Contact, Email, Mobile
+    AC-15: Auto-populates appropriate fields
+    AC-16: Manual override available for all fields
+    AC-17: Validation for email format and ABN format
+    AC-18: Optional "Add to Stakeholders" button adds firm to Plan/Stakeholders list with Discipline/Trade, Entity, Contact, Email, Mobile
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      - path: docs/tech-spec-epic-3.md
+        title: Technical Specification - Epic 3 (Consultant/Contractor Cards)
+        section: APIs and Interfaces
+        snippet: Defines extractFirmDetails server action specification with GPT-4 for intelligent text extraction from various document formats (vCard, email, PDF, DOCX).
+
+      - path: docs/tech-spec-epic-3.md
+        title: Technical Specification - Epic 3
+        section: Workflows and Sequencing
+        snippet: Documents Firm Management Flow including AI-powered extraction, validation, and stakeholder integration workflows.
+
+      - path: docs/tech-spec-epic-3.md
+        title: Technical Specification - Epic 3
+        section: Non-Functional Requirements
+        snippet: Specifies 5 second time limit for AI extraction operations with loading indicators and graceful timeout handling.
+
+      - path: docs/epics.md
+        title: Product Epics
+        section: Epic 3 Story 3.3
+        snippet: Original acceptance criteria and business requirements for drag-and-drop firm details feature.
+
+      - path: docs/architecture.md
+        title: System Architecture
+        section: AI/LLM
+        snippet: Details Vercel AI SDK integration with OpenAI GPT-4 for intelligent document processing and data extraction.
+    </docs>
+
+    <code>
+      - path: assemble-app/src/app/actions/consultant.ts
+        kind: server-action
+        symbol: extractFirmDetailsFromFile, extractFirmDetailsFromText
+        lines: entire-file
+        reason: Server actions implementing AI-powered firm detail extraction using GPT-4. Core business logic for AC-14.
+
+      - path: assemble-app/src/lib/parsers/vcardParser.ts
+        kind: utility
+        symbol: parseVCard
+        lines: entire-file
+        reason: Native vCard 3.0/4.0 parser for extracting firm details from .vcf files. Supports AC-12.
+
+      - path: assemble-app/src/lib/parsers/emailParser.ts
+        kind: utility
+        symbol: parseEmail
+        lines: entire-file
+        reason: Email message parser for .eml format files, extracts headers and body for AI processing. Supports AC-12.
+
+      - path: assemble-app/src/lib/ai/firmExtractorPrompts.ts
+        kind: ai-prompt
+        symbol: firmExtractorSystemPrompt, FirmData
+        lines: entire-file
+        reason: AI prompts and TypeScript types for firm extraction. Defines expected JSON structure and extraction rules for AC-14.
+
+      - path: assemble-app/src/lib/ai/openai.ts
+        kind: config
+        symbol: openai
+        lines: entire-file
+        reason: OpenAI client configuration for GPT-4 integration. Required for all AI extraction operations.
+
+      - path: assemble-app/src/components/cards/sections/FirmsSection.tsx
+        kind: component
+        symbol: FirmColumn
+        lines: entire-file
+        reason: Main UI component implementing drag-drop zone, paste handler, auto-population, validation, and stakeholder integration. Implements AC-12 through AC-18.
+    </code>
+
+    <dependencies>
+      - node:
+          openai: "^4.x" (GPT-4 API client)
+          @vercel/ai: "^3.x" (AI SDK integration)
+          react-hook-form: "^7.x" (Form state and validation)
+          zod: "^3.x" (Validation schemas)
+          @dnd-kit/core: "^6.x" (Drag-and-drop primitives)
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - All AI extraction operations must complete within 5 seconds (NFR requirement)
+    - Show loading indicators during AI processing
+    - Handle timeouts gracefully with user-friendly messages
+    - Use GPT-4 model with temperature=0 for deterministic output
+    - Support file formats: vCard (.vcf), Email (.eml, .msg), PDF (.pdf), Word (.docx), Plain text (.txt)
+    - ABN validation: 11 digits with valid check digit
+    - Email validation: RFC 5322 standard
+    - Australian phone number format: +61 4XX XXX XXX or 04XX XXX XXX
+    - All fields must remain editable after auto-population (manual override)
+    - Use server actions for all AI operations (not client-side API calls)
+  </constraints>
+
+  <interfaces>
+    - name: extractFirmDetailsFromFile
+      kind: Server Action
+      signature: "async function extractFirmDetailsFromFile(file: File): Promise<FirmData>"
+      path: assemble-app/src/app/actions/consultant.ts
+
+    - name: extractFirmDetailsFromText
+      kind: Server Action
+      signature: "async function extractFirmDetailsFromText(text: string): Promise<FirmData>"
+      path: assemble-app/src/app/actions/consultant.ts
+
+    - name: FirmData
+      kind: TypeScript Interface
+      signature: "{ entity: string | null; abn: string | null; address: string | null; contact: string | null; email: string | null; mobile: string | null }"
+      path: assemble-app/src/lib/ai/firmExtractorPrompts.ts
+
+    - name: parseVCard
+      kind: Utility Function
+      signature: "function parseVCard(vcardContent: string): FirmData"
+      path: assemble-app/src/lib/parsers/vcardParser.ts
+
+    - name: parseEmail
+      kind: Utility Function
+      signature: "function parseEmail(emlContent: string): { headers: Record<string, string>; body: string }"
+      path: assemble-app/src/lib/parsers/emailParser.ts
+  </interfaces>
+
+  <tests>
+    <standards>
+      Project uses Jest for unit testing and Playwright for E2E testing. All AI interactions should be mocked in tests. Follow testing patterns established in Epic 2 document processing tests.
+    </standards>
+
+    <locations>
+      - assemble-app/src/__tests__/ (unit tests)
+      - assemble-app/e2e/ (end-to-end tests)
+    </locations>
+
+    <ideas>
+      Unit Tests:
+      - Test vCard parsing with various vCard 3.0 and 4.0 formats (AC-12, AC-14)
+      - Test AI extraction prompt formatting and response parsing with mocked OpenAI (AC-14)
+      - Test email format validation (RFC 5322) (AC-17)
+      - Test ABN format validation including check digit calculation (AC-17)
+      - Test Australian mobile number format validation (AC-17)
+
+      Integration Tests:
+      - Test drag vCard file → verify AI extraction → verify field population (AC-12, AC-14, AC-15)
+      - Test paste text → verify AI extraction → verify field population (AC-13, AC-14, AC-15)
+      - Test Add to Stakeholders → verify API call with correct data structure (AC-18)
+      - Test validation errors displayed inline for invalid email/ABN (AC-17)
+
+      E2E Tests:
+      - Complete drag-drop workflow with various file types (.vcf, .eml, .pdf, .docx, .txt) (AC-12)
+      - Manual override after auto-population preserves edits (AC-16)
+      - Timeout handling displays appropriate user message (NFR constraint)
+      - Visual indicators for AI-populated fields appear and clear correctly (AC-15)
+    </ideas>
+  </tests>
+</story-context>

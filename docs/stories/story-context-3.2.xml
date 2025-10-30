@@ -1,0 +1,149 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>2</storyId>
+    <title>Firms Management - Layout and Controls</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-26</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/3-2-firms-management-layout-and-controls.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a user</asA>
+    <iWant>to manage multiple firms per consultant discipline</iWant>
+    <soThat>I can track all potential suppliers</soThat>
+    <tasks>
+      <task id="1" ac="6">Create Firm column layout</task>
+      <task id="2" ac="7">Implement Add Firm functionality</task>
+      <task id="3" ac="8">Implement Delete Firm functionality</task>
+      <task id="4" ac="9">Add drag-and-drop reordering</task>
+      <task id="5" ac="10">Create firm data fields</task>
+      <task id="6" ac="11">Implement data persistence</task>
+      <task id="7" ac="all">Create database schema and API</task>
+      <task id="8" ac="all">Testing</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="6">Display 3 default firm columns side-by-side</criterion>
+    <criterion id="7">Add new firm (adds column) up to reasonable limit</criterion>
+    <criterion id="8">Delete firm (removes column) with confirmation dialog</criterion>
+    <criterion id="9">Drag to reorder firm columns with visual feedback</criterion>
+    <criterion id="10">Each firm has fields: Entity, ABN, Address, Contact, Email, Mobile, Short Listed toggle</criterion>
+    <criterion id="11">Data persists to database</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec-epic-3.md" title="Epic 3 Technical Specification" section="Services and Modules">
+        FirmManager service: CRUD operations for firms, drag-drop handling. Inputs: Firm data, vCards → Firm records. Owner: assemble-app/src/server/services/firmManager.ts
+      </doc>
+      <doc path="docs/tech-spec-epic-3.md" title="Epic 3 Technical Specification" section="Data Models">
+        Firm model: id, consultantCardId, contractorCardId, entity (required), abn, address, contact, email, mobile, shortListed (boolean), displayOrder (int), relations to ConsultantCard/ContractorCard, submissions, rfis, addendums
+      </doc>
+      <doc path="docs/tech-spec-epic-3.md" title="Epic 3 Technical Specification" section="APIs and Interfaces">
+        tRPC consultantRouter: addFirm mutation (cardId, firmData), updateFirm, deleteFirm, updateFirmOrder (cardId, firmIds array for display order)
+      </doc>
+      <doc path="docs/tech-spec-epic-3.md" title="Epic 3 Technical Specification" section="Workflows">
+        Firm Management Flow: User clicks Add Firm → System adds new firm column (max 3 displayed) → User enters/imports firm details → User manually edits → User toggles Short Listed → System saves to database with displayOrder
+      </doc>
+      <doc path="docs/tech-spec-epic-3.md" title="Epic 3 Technical Specification" section="Non-Functional Requirements">
+        Performance: Drag-drop reordering must provide visual feedback <50ms. Auto-save debounced to 500ms. Field validation must be inline with instant feedback
+      </doc>
+      <doc path="docs/architecture.md" title="Decision Architecture" section="Dependencies">
+        @dnd-kit/sortable (^8.0.0) for drag-and-drop firm reordering. react-hook-form (^7.52.0) for form state. zod (^3.23.8) for validation schemas
+      </doc>
+    </docs>
+    <code>
+      <artifact path="assemble-app/src/components/cards/sections/ConsultantListSection.tsx" kind="component" symbol="ConsultantListSection" reason="Shows pattern for managing lists with add/delete - can reference for Firms section">
+        List management component pattern: add items, delete with confirmation, display in structured layout
+      </artifact>
+      <artifact path="assemble-app/src/components/cards/fields/TextField.tsx" kind="component" symbol="TextField" reason="Reusable text field component - use for Entity, ABN, Contact fields">
+        Existing field component with label, validation, error display
+      </artifact>
+      <artifact path="assemble-app/src/components/cards/fields/TextAreaField.tsx" kind="component" symbol="TextAreaField" reason="Reusable textarea component - use for Address field">
+        Existing textarea component for multiline input
+      </artifact>
+      <artifact path="assemble-app/src/components/providers/DndProvider.tsx" kind="provider" symbol="DndProvider" reason="DnD context provider already set up - reuse for firm reordering">
+        @dnd-kit provider wrapping app - sortable functionality available
+      </artifact>
+      <artifact path="assemble-app/src/components/ui/checkbox.tsx" kind="component" symbol="Checkbox" reason="Use for Short Listed toggle">
+        Existing checkbox component from shadcn/ui
+      </artifact>
+      <artifact path="assemble-app/prisma/schema.prisma" kind="schema" symbol="Card, Section, Item" reason="Existing models to reference - Firm model will be new addition">
+        Need to add new Firm model with relations to Card (consultantCardId/contractorCardId)
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="@dnd-kit/core" version="^6.3.1"/>
+        <package name="@dnd-kit/sortable" version="^10.0.0"/>
+        <package name="@dnd-kit/utilities" version="^3.2.2"/>
+        <package name="react-hook-form" version="latest"/>
+        <package name="zod" version="^3.25.76"/>
+        <package name="@prisma/client" version="^6.0.1"/>
+        <package name="lucide-react" version="^0.548.0"/>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>MUST add new Firm model to Prisma schema with consultantCardId and contractorCardId foreign keys</constraint>
+    <constraint>MUST use @dnd-kit/sortable for drag-and-drop reordering (already installed)</constraint>
+    <constraint>MUST use react-hook-form for form state management and validation</constraint>
+    <constraint>MUST use zod for validation schemas (ABN: 11 digits, Email: RFC 5322, Mobile: Australian format)</constraint>
+    <constraint>Firm columns displayed side-by-side with horizontal scroll for > 3 firms</constraint>
+    <constraint>Default display: 3 firm columns, max reasonable limit: 10 firms</constraint>
+    <constraint>Delete must show confirmation dialog using existing UI patterns</constraint>
+    <constraint>Auto-save must be debounced to 500ms on field blur</constraint>
+    <constraint>Optimistic updates for immediate UI feedback during save</constraint>
+    <constraint>Drag-drop visual feedback must be <50ms (NFR requirement)</constraint>
+    <constraint>Must reuse existing TextField and TextAreaField components</constraint>
+    <constraint>Component location: assemble-app/src/components/cards/sections/FirmsSection.tsx</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="Firm" kind="Prisma model">
+      <signature>model Firm { id String; consultantCardId String?; contractorCardId String?; entity String; abn String?; address String?; contact String?; email String?; mobile String?; shortListed Boolean; displayOrder Int; }</signature>
+      <path>assemble-app/prisma/schema.prisma</path>
+    </interface>
+    <interface name="consultantRouter.addFirm" kind="tRPC mutation">
+      <signature>addFirm({ cardId: string, firmData: { entity, abn?, address?, contact?, email?, mobile? } }) => Firm</signature>
+      <path>assemble-app/src/server/api/routers/consultant.ts</path>
+    </interface>
+    <interface name="consultantRouter.updateFirmOrder" kind="tRPC mutation">
+      <signature>updateFirmOrder({ cardId: string, firmIds: string[] }) => void</signature>
+      <path>assemble-app/src/server/api/routers/consultant.ts</path>
+    </interface>
+    <interface name="FirmValidationSchema" kind="Zod schema">
+      <signature>z.object({ entity: z.string().min(1), abn: z.string().regex(/^\d{11}$/).optional(), email: z.string().email().optional(), mobile: z.string().regex(australian mobile).optional() })</signature>
+      <path>assemble-app/src/lib/validators/firmValidators.ts</path>
+    </interface>
+    <interface name="SortableContext" kind="@dnd-kit component">
+      <signature>&lt;SortableContext items={firmIds} strategy={horizontalListSortingStrategy}&gt;...&lt;/SortableContext&gt;</signature>
+      <path>From @dnd-kit/sortable</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Project uses Vitest for unit/integration tests and Playwright for E2E tests. Components tested with React Testing Library. Validation logic tested in isolation. Follow AAA pattern.
+    </standards>
+    <locations>
+      <location>assemble-app/tests/unit/components/cards/sections/</location>
+      <location>assemble-app/tests/unit/lib/validators/</location>
+      <location>assemble-app/tests/integration/</location>
+      <location>assemble-app/e2e/</location>
+    </locations>
+    <ideas>
+      <test ac="6" type="unit">Render FirmsSection → verify 3 firm columns displayed side-by-side</test>
+      <test ac="7" type="integration">Click Add Firm → verify new firm column created, max limit enforced</test>
+      <test ac="8" type="integration">Click delete firm → verify confirmation dialog → confirm → verify firm removed from database</test>
+      <test ac="9" type="unit">Drag firm column → drop at new position → verify displayOrder updated in correct sequence</test>
+      <test ac="10" type="unit">Test firmValidators: valid/invalid ABN (11 digits), valid/invalid email, valid/invalid mobile format</test>
+      <test ac="11" type="integration">Edit firm field → blur → wait 500ms → verify auto-save to database</test>
+      <test ac="all" type="e2e">Full workflow: add firms, enter data, reorder, delete, reload page → verify persistence</test>
+    </ideas>
+  </tests>
+</story-context>

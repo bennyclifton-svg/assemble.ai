@@ -1,0 +1,139 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>1</storyId>
+    <title>Consultant Card Structure</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-26</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/3-1-consultant-card-structure.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a user</asA>
+    <iWant>Consultant Card with all predefined sections</iWant>
+    <soThat>I can manage consultant procurement comprehensively</soThat>
+    <tasks>
+      <task id="1" ac="1,2">Create ConsultantCard component structure</task>
+      <task id="2" ac="2">Implement 10 predefined sections</task>
+      <task id="3" ac="3">Add collapsible/expandable functionality</task>
+      <task id="4" ac="4">Implement tab navigation</task>
+      <task id="5" ac="5">Persist state across sessions</task>
+      <task id="6" ac="all">Create database schema and API</task>
+      <task id="7" ac="all">Testing</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">Consultant Card displays tabs for each toggled-on consultant from Plan Card</criterion>
+    <criterion id="2">Each tab contains sections: Firms, Scope, Deliverables, Fee Structure, Tender Document, Tender Release and Submission, Tender Pack, Tender RFI and Addendum, Tender Evaluation, Tender Recommendation Report</criterion>
+    <criterion id="3">Sections are collapsible/expandable with chevrons</criterion>
+    <criterion id="4">Tab navigation between consultants functions correctly</criterion>
+    <criterion id="5">State persists between sessions</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec-epic-3.md" title="Epic 3 Technical Specification" section="Services and Modules">
+        ConsultantCardManager service manages consultant card lifecycle, tab creation/deletion. Inputs: Plan Card toggles → Card state updates. Owner: src/components/cards/ConsultantCard.tsx
+      </doc>
+      <doc path="docs/tech-spec-epic-3.md" title="Epic 3 Technical Specification" section="Data Models">
+        ConsultantCard model: id, projectId, discipline, isActive, sections[], firms[], timestamps. ConsultantSection model: id, cardId, sectionType (enum), content (Json), isCollapsed. 10 section types: FIRMS, SCOPE, DELIVERABLES, FEE_STRUCTURE, TENDER_DOCUMENT, TENDER_RELEASE, TENDER_PACK, RFI_ADDENDUM, TENDER_EVALUATION, RECOMMENDATION_REPORT
+      </doc>
+      <doc path="docs/tech-spec-epic-3.md" title="Epic 3 Technical Specification" section="Workflows">
+        Consultant Card Creation Flow: User toggles consultant in Plan Card → System creates ConsultantCard with discipline → System creates 10 default sections → System adds tab to UI → User sees empty Consultant Card ready for data
+      </doc>
+      <doc path="docs/architecture.md" title="Decision Architecture" section="Epic to Architecture Mapping">
+        Epic 3 uses: tRPC, dnd-kit, React Hook Form, Zustand stores (workspaceStore), Prisma 6, TypeScript. Firm management routers, Consultant/Contractor Card components, Tender evaluation tables, Multi-select implementation
+      </doc>
+      <doc path="docs/epics.md" title="Epic Breakdown" section="Epic 3 Story 3.1">
+        Plan Card displays all Cards in side navigation. Cards can be opened individually or in combinations (2-3 side-by-side). Active cards highlighted in navigation. Responsive to 1920x1080 resolution minimum
+      </doc>
+      <doc path="docs/PRD.md" title="Product Requirements Document" section="Consultant & Contractor Cards">
+        FR011: Consultant Card with predefined sections (Firms, Scope, Deliverables, Fee Structure, Tender Document, Tender Release and Submission, Tender Pack, Tender RFI and Addendum, Tender Evaluation, Tender Recommendation Report). System maintains Consultant List in Plan Card for tracking multiple firms per discipline
+      </doc>
+    </docs>
+    <code>
+      <artifact path="assemble-app/src/components/cards/PlanCard.tsx" kind="component" symbol="PlanCard" reason="Existing card pattern to follow - uses CardPanel, Section components, workspace store for state, section collapse/expand logic">
+        Lines 1-90: Shows established pattern: planCardSections array defines sections, renderSectionContent switches based on section, useWorkspaceStore for collapse state, Section component with toggle
+      </artifact>
+      <artifact path="assemble-app/src/components/cards/CardPanel.tsx" kind="component" symbol="CardPanel" reason="Reusable card container component for all card types">
+        Wrapper component for card display with title and close button
+      </artifact>
+      <artifact path="assemble-app/src/components/cards/Section.tsx" kind="component" symbol="Section" reason="Reusable section component with collapse/expand functionality">
+        Section component with chevron toggle, icon, title, handles isCollapsed prop and onToggle callback
+      </artifact>
+      <artifact path="assemble-app/src/stores/workspaceStore.ts" kind="store" symbol="useWorkspaceStore" reason="Zustand store managing workspace state including section collapse states">
+        Must extend this store to support Consultant Card tab navigation and section states
+      </artifact>
+      <artifact path="assemble-app/prisma/schema.prisma" kind="schema" symbol="Card, Section, Item" lines="14-85" reason="Existing database models - Card has CardType enum including CONSULTANT, Section and Item follow Card-Section-Item hierarchy">
+        Card model already exists with type:CardType field. CardType enum includes CONSULTANT. Section model has order, isCollapsed fields. Item model has flexible Json data field
+      </artifact>
+      <artifact path="assemble-app/src/app/actions/card.ts" kind="server-action" symbol="card actions" reason="Existing server actions for card operations to extend">
+        Server actions for CRUD operations on cards
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="next" version="15.5.6"/>
+        <package name="react" version="19.1.0"/>
+        <package name="@prisma/client" version="^6.0.1"/>
+        <package name="zustand" version="^5.0.8"/>
+        <package name="lucide-react" version="^0.548.0"/>
+        <package name="@dnd-kit/core" version="^6.3.1"/>
+        <package name="@dnd-kit/sortable" version="^10.0.0"/>
+        <package name="tailwind-merge" version="^3.3.1"/>
+        <package name="zod" version="^3.25.76"/>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>MUST follow established Card-Section-Item hierarchy from Epic 1</constraint>
+    <constraint>MUST use existing CardPanel and Section components - do not recreate</constraint>
+    <constraint>MUST extend existing workspaceStore (Zustand) for state management</constraint>
+    <constraint>MUST use CardType.CONSULTANT enum value (already exists in schema)</constraint>
+    <constraint>Sections must be collapsible/expandable using existing Section component pattern</constraint>
+    <constraint>Tab navigation must support multiple consultant disciplines simultaneously</constraint>
+    <constraint>State persistence must use database (Section.isCollapsed field exists)</constraint>
+    <constraint>Component must be created at: assemble-app/src/components/cards/ConsultantCard.tsx</constraint>
+    <constraint>Follow PlanCard.tsx pattern: sections array, renderSectionContent switch, Section mapping</constraint>
+    <constraint>Use lucide-react icons for section icons (consistent with existing cards)</constraint>
+  </constraints>
+  <interfaces>
+    <interface name="ConsultantCardProps" kind="TypeScript interface">
+      <signature>interface ConsultantCardProps { projectId: string; discipline: string; onClose: () => void; }</signature>
+      <path>assemble-app/src/components/cards/ConsultantCard.tsx</path>
+    </interface>
+    <interface name="useWorkspaceStore" kind="Zustand store">
+      <signature>Must extend with: toggleSection(projectId, sectionId), isSectionCollapsed(projectId, sectionId), consultant tab management</signature>
+      <path>assemble-app/src/stores/workspaceStore.ts</path>
+    </interface>
+    <interface name="CardPanel" kind="React component">
+      <signature>&lt;CardPanel title={string} onClose={() => void}&gt;children&lt;/CardPanel&gt;</signature>
+      <path>assemble-app/src/components/cards/CardPanel.tsx</path>
+    </interface>
+    <interface name="Section" kind="React component">
+      <signature>&lt;Section id={string} title={string} icon={LucideIcon} isCollapsed={boolean} onToggle={() => void}&gt;content&lt;/Section&gt;</signature>
+      <path>assemble-app/src/components/cards/Section.tsx</path>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+      Project uses Vitest for unit/integration tests and Playwright for E2E tests (per architecture.md). Components tested with React Testing Library. Test files colocated or in tests/ directory. Follow AAA pattern (Arrange, Act, Assert).
+    </standards>
+    <locations>
+      <location>assemble-app/tests/unit/components/cards/</location>
+      <location>assemble-app/tests/integration/</location>
+      <location>assemble-app/e2e/</location>
+    </locations>
+    <ideas>
+      <test ac="1" type="integration">Toggle consultant in Plan Card → verify ConsultantCard component renders with correct discipline</test>
+      <test ac="2" type="unit">Render ConsultantCard → verify all 10 sections present in correct order</test>
+      <test ac="3" type="unit">Click section chevron → verify section toggles collapsed/expanded state</test>
+      <test ac="4" type="integration">Multiple consultant tabs → click each tab → verify correct discipline data loads</test>
+      <test ac="5" type="integration">Collapse section → reload page → verify section remains collapsed (state persistence)</test>
+      <test ac="all" type="e2e">Full workflow: toggle consultants, navigate tabs, collapse sections, reload - verify all functionality</test>
+    </ideas>
+  </tests>
+</story-context>

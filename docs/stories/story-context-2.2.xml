@@ -1,0 +1,304 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.2</storyId>
+    <title>Drag-and-Drop File Upload</title>
+    <status>in-progress</status>
+    <generatedAt>2025-10-27</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/2-2-drag-and-drop-file-upload.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a user</asA>
+    <iWant>to drag and drop files into the system</iWant>
+    <soThat>I can quickly upload documents</soThat>
+    <tasks>
+      <task>Configure AWS S3 bucket with CORS and IAM permissions</task>
+      <task>Implement S3 service for file uploads and signed URL generation</task>
+      <task>Create DragDropZone component with visual feedback and file validation</task>
+      <task>Implement Server Action for file uploads with validation</task>
+      <task>Add folder-aware upload handler to support dropping files on specific folders</task>
+      <task>Create UploadProgress component with per-file progress tracking</task>
+      <task>Implement MIME type validation on client and server</task>
+      <task>Add checksum calculation (MD5) for uploaded files</task>
+      <task>Queue documents for AI processing after upload</task>
+      <task>Implement duplicate file detection by checking filename in target folder</task>
+      <task>Create DuplicateFileDialog component with "Replace Existing", "Keep Both", "Cancel" options</task>
+      <task>Implement "Keep Both" logic with automatic filename renaming (e.g., report (1).pdf)</task>
+      <task>Create dedicated always-visible drop zone in header or sidebar for default/Upload Inbox uploads</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-1">Drag-and-drop zones clearly indicated with visual feedback (dashed border, highlight on hover)</criterion>
+    <criterion id="AC-2">Support bulk file uploads (multiple files simultaneously, up to 20 files)</criterion>
+    <criterion id="AC-3">Bulk drag-and-drop files directly onto any folder in the document tree</criterion>
+    <criterion id="AC-4">Files dropped on folders automatically upload to that folder path</criterion>
+    <criterion id="AC-5">File size limit of 15MB enforced with user-friendly error message</criterion>
+    <criterion id="AC-6">Progress indicator shows upload percentage for each file</criterion>
+    <criterion id="AC-7">Files successfully uploaded to AWS S3 with unique keys</criterion>
+    <criterion id="AC-8">Signed URLs generated with 1-hour expiration for secure access</criterion>
+    <criterion id="AC-9">MIME type validation prevents upload of unsupported file types</criterion>
+    <criterion id="AC-10">When uploading a file with duplicate filename in target folder, dialog prompt appears with three options: "Replace Existing", "Keep Both", or "Cancel"</criterion>
+    <criterion id="AC-11">"Replace Existing" option deletes old file and uploads new file with same name</criterion>
+    <criterion id="AC-12">"Keep Both" option renames new file by appending number in parentheses (e.g., report.pdf becomes report (1).pdf, report (1).pdf becomes report (2).pdf)</criterion>
+    <criterion id="AC-13">"Cancel" option skips upload for that specific file but continues with other files in bulk upload</criterion>
+    <criterion id="AC-14">Dedicated always-visible drop zone in header or sidebar for uploading to default "Upload Inbox" location</criterion>
+    <criterion id="AC-15">Always-visible drop zone remains accessible regardless of current page or folder selection</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>Document Repository Requirements</section>
+        <snippet>FR007: System shall support file uploads up to 15MB and accept bulk drag-and-drop files into categories. FR009: System shall allow users to select disparate document sets for tender packages.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture Decision Document</title>
+        <section>File Storage and Processing</section>
+        <snippet>AWS S3 for file storage with signed URLs. Server Actions for mutations. Drag-and-drop using react-dropzone library. Next.js 15 with App Router for file handling.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Technical Specification - Epic 2</title>
+        <section>Drag-Drop File Upload and S3 Integration</section>
+        <snippet>DragDropZone component with react-dropzone, visual feedback for drag states, client-side validation. Server Action (uploadDocuments) handles FormData, validates files server-side, generates unique S3 keys with pattern projectId/folderPath/timestamp-filename, uploads to S3 in parallel, creates Document records, queues for AI processing. S3Service manages AWS operations with signed URLs expiring after 1 hour. File size limit 15MB per file, 300MB total, 20 files max. MIME type validation against whitelist (PDF, PNG, JPG, JPEG, DOC, DOCX). MD5 checksum for integrity. Progress tracking per file with UploadProgress component. Duplicate file handling with Replace/Keep Both/Cancel dialog. Always-visible Upload Inbox drop zone.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>assemble-app/src/server/services/s3.ts</path>
+        <kind>service</kind>
+        <symbol>s3</symbol>
+        <lines>all</lines>
+        <reason>Existing S3 service - needs implementation of uploadToS3() and getSignedDownloadUrl() functions for file storage and secure access.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/components/ui/DragDropZone.tsx</path>
+        <kind>component</kind>
+        <symbol>DragDropZone</symbol>
+        <lines>all</lines>
+        <reason>Existing drag-drop component - needs full implementation with react-dropzone, visual feedback, file validation, and error handling.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/server/services/documentProcessor.ts</path>
+        <kind>service</kind>
+        <symbol>documentProcessor</symbol>
+        <lines>all</lines>
+        <reason>Document processing service - handles document creation and queuing for AI processing after upload.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>Document, DocumentQueue</symbol>
+        <lines>88-144</lines>
+        <reason>Document model with S3 storage fields (s3Key, s3Bucket, url, size, mimeType, checksum). DocumentQueue model for AI processing queue.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/components/ui/progress.tsx</path>
+        <kind>component</kind>
+        <symbol>Progress</symbol>
+        <lines>all</lines>
+        <reason>Progress bar component for displaying upload progress per file.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/components/workspace/NavigationSidebar.tsx</path>
+        <kind>component</kind>
+        <symbol>NavigationSidebar</symbol>
+        <lines>all</lines>
+        <reason>Sidebar component where always-visible drop zone should be added for Upload Inbox.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <npm>
+        <package>@aws-sdk/client-s3</package>
+        <version>^3.917.0</version>
+        <usage>S3 operations for file uploads</usage>
+      </npm>
+      <npm>
+        <package>@aws-sdk/s3-request-presigner</package>
+        <version>^3.917.0</version>
+        <usage>Generate signed URLs for secure downloads</usage>
+      </npm>
+      <npm>
+        <package>react-dropzone</package>
+        <version>^14.3.8</version>
+        <usage>Drag-and-drop file upload functionality</usage>
+      </npm>
+      <npm>
+        <package>@prisma/client</package>
+        <version>^6.0.1</version>
+        <usage>Database access for Document and DocumentQueue models</usage>
+      </npm>
+      <npm>
+        <package>zod</package>
+        <version>^3.25.76</version>
+        <usage>Schema validation for file uploads</usage>
+      </npm>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Use Server Actions for file upload mutations (uploadDocuments, uploadDocumentsToFolder)</constraint>
+    <constraint>Store files in private AWS S3 bucket with region us-east-1</constraint>
+    <constraint>Generate S3 keys with pattern: projectId/folderPath/timestamp-filename</constraint>
+    <constraint>File size limit: 15MB per file, 300MB total for bulk uploads (20 files max)</constraint>
+    <constraint>Allowed MIME types: application/pdf, image/png, image/jpeg, image/jpg, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document</constraint>
+    <constraint>Calculate MD5 checksum for all uploaded files for integrity verification</constraint>
+    <constraint>Generate signed URLs with 1-hour (3600 seconds) expiration</constraint>
+    <constraint>Validate files on both client-side (react-dropzone) and server-side (Server Action)</constraint>
+    <constraint>Queue uploaded documents in DocumentQueue with status 'pending' for AI processing</constraint>
+    <constraint>Support folder-aware uploads - files dropped on folders must save to that folder path</constraint>
+    <constraint>Check for duplicate filenames in target folder before upload, trigger dialog if duplicate detected</constraint>
+    <constraint>"Keep Both" renaming logic: append (1), (2), (3) etc. to filename before extension (e.g., report.pdf → report (1).pdf)</constraint>
+    <constraint>"Replace Existing" must soft delete (set deletedAt) the old document before uploading new one</constraint>
+    <constraint>Default upload location "Upload Inbox" must be a predefined folder path in the repository structure</constraint>
+    <constraint>Always-visible drop zone in sidebar must be compact and non-intrusive but clearly identifiable</constraint>
+    <constraint>Use Tailwind CSS for styling drag-drop zones, dialogs, and progress indicators</constraint>
+    <constraint>Implement soft deletes (deletedAt field) - no hard deletes</constraint>
+    <constraint>Log all upload operations with Pino structured logging</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>uploadDocuments</name>
+      <kind>Server Action</kind>
+      <signature>async uploadDocuments(formData: FormData): Promise&lt;ActionResult&lt;Document[]&gt;&gt;</signature>
+      <path>app/actions/document.ts</path>
+      <description>Handles file uploads with validation, S3 storage, document record creation, and AI processing queue</description>
+    </interface>
+    <interface>
+      <name>uploadDocumentsToFolder</name>
+      <kind>Server Action</kind>
+      <signature>async uploadDocumentsToFolder(formData: FormData, folderPath: string): Promise&lt;ActionResult&lt;Document[]&gt;&gt;</signature>
+      <path>app/actions/document.ts</path>
+      <description>Folder-aware upload handler for files dropped directly on folder tree nodes</description>
+    </interface>
+    <interface>
+      <name>uploadToS3</name>
+      <kind>Service function</kind>
+      <signature>async uploadToS3(file: Buffer, key: string, mimeType: string): Promise&lt;string&gt;</signature>
+      <path>server/services/s3.ts</path>
+      <description>Uploads file buffer to S3 and returns permanent URL</description>
+    </interface>
+    <interface>
+      <name>getSignedDownloadUrl</name>
+      <kind>Service function</kind>
+      <signature>async getSignedDownloadUrl(key: string): Promise&lt;string&gt;</signature>
+      <path>server/services/s3.ts</path>
+      <description>Generates signed URL with 1-hour expiration for secure file access</description>
+    </interface>
+    <interface>
+      <name>DragDropZone</name>
+      <kind>React Component</kind>
+      <signature>DragDropZone({ onDrop, maxFiles = 20, maxSize, accept }: DragDropZoneProps)</signature>
+      <path>components/ui/DragDropZone.tsx</path>
+      <description>Drag-and-drop zone with visual feedback, file validation (default max 20 files), and error display</description>
+    </interface>
+    <interface>
+      <name>UploadProgress</name>
+      <kind>React Component</kind>
+      <signature>UploadProgress({ files }: UploadProgressProps)</signature>
+      <path>components/ui/UploadProgress.tsx</path>
+      <description>Progress indicator showing upload status for each file</description>
+    </interface>
+    <interface>
+      <name>ActionResult</name>
+      <kind>TypeScript type</kind>
+      <signature>type ActionResult&lt;T&gt; = { success: true; data: T } | { success: false; error: { code: string; message: string } }</signature>
+      <path>types/actions.ts</path>
+      <description>Standard result type for Server Actions with success/error handling</description>
+    </interface>
+    <interface>
+      <name>checkDuplicateFile</name>
+      <kind>Server Action</kind>
+      <signature>async checkDuplicateFile(projectId: string, folderPath: string, filename: string): Promise&lt;ActionResult&lt;{ isDuplicate: boolean; existingDocument?: Document }&gt;&gt;</signature>
+      <path>app/actions/document.ts</path>
+      <description>Checks if filename already exists in target folder before upload</description>
+    </interface>
+    <interface>
+      <name>generateUniqueFilename</name>
+      <kind>Utility function</kind>
+      <signature>function generateUniqueFilename(filename: string, existingFilenames: string[]): string</signature>
+      <path>lib/utils/fileUtils.ts</path>
+      <description>Generates unique filename by appending (1), (2), etc. before extension</description>
+    </interface>
+    <interface>
+      <name>DuplicateFileDialog</name>
+      <kind>React Component</kind>
+      <signature>DuplicateFileDialog({ filename, onReplace, onKeepBoth, onCancel, isOpen }: DuplicateFileDialogProps)</signature>
+      <path>components/documents/DuplicateFileDialog.tsx</path>
+      <description>Modal dialog for handling duplicate file uploads with Replace/Keep Both/Cancel options</description>
+    </interface>
+    <interface>
+      <name>InboxDropZone</name>
+      <kind>React Component</kind>
+      <signature>InboxDropZone({ projectId }: InboxDropZoneProps)</signature>
+      <path>components/documents/InboxDropZone.tsx</path>
+      <description>Always-visible compact drop zone in sidebar for uploading to Upload Inbox folder</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Use Vitest for unit/integration tests, React Testing Library for component tests, Playwright for E2E tests. Mock S3 operations using Mock Service Worker (MSW) or AWS SDK mocks. Test coverage minimum 80% for critical paths. All acceptance criteria must have at least one automated test.</standards>
+    <locations>assemble-app/src/__tests__/*, assemble-app/e2e/*</locations>
+    <ideas>
+      <testIdea acRef="AC-1">Component test: DragDropZone displays dashed border by default, highlights with blue border on drag hover</testIdea>
+      <testIdea acRef="AC-2">E2E test: Upload 20 files simultaneously and verify all are processed</testIdea>
+      <testIdea acRef="AC-3, AC-4">E2E test: Drag files onto specific folder in tree, verify documents created with correct folder path</testIdea>
+      <testIdea acRef="AC-5">Unit test: File validation rejects files > 15MB with error message</testIdea>
+      <testIdea acRef="AC-5">Component test: DragDropZone displays error message for oversized files</testIdea>
+      <testIdea acRef="AC-6">Component test: UploadProgress component displays percentage for each uploading file</testIdea>
+      <testIdea acRef="AC-7">Integration test: uploadToS3 function creates file in S3 with correct key pattern</testIdea>
+      <testIdea acRef="AC-7">Unit test: S3 key generation follows pattern projectId/folderPath/timestamp-filename</testIdea>
+      <testIdea acRef="AC-8">Unit test: getSignedDownloadUrl generates URL expiring in 3600 seconds</testIdea>
+      <testIdea acRef="AC-9">Unit test: MIME type validation rejects unsupported file types (exe, zip, etc.)</testIdea>
+      <testIdea acRef="AC-9">E2E test: Attempt upload of .exe file, verify rejection with error message</testIdea>
+      <testIdea acRef="AC-10">E2E test: Upload file with same name as existing file in folder, verify dialog appears with three options</testIdea>
+      <testIdea acRef="AC-11">E2E test: Select "Replace Existing", verify old file soft deleted and new file uploaded with same name</testIdea>
+      <testIdea acRef="AC-12">Unit test: generateUniqueFilename creates report (1).pdf from report.pdf when report.pdf exists</testIdea>
+      <testIdea acRef="AC-12">E2E test: Select "Keep Both", verify new file uploaded with (1) appended before extension</testIdea>
+      <testIdea acRef="AC-12">Unit test: generateUniqueFilename increments correctly (report.pdf → report (1).pdf → report (2).pdf)</testIdea>
+      <testIdea acRef="AC-13">E2E test: Select "Cancel" on duplicate file dialog, verify file not uploaded but other files in bulk continue</testIdea>
+      <testIdea acRef="AC-14, AC-15">Component test: InboxDropZone visible in sidebar regardless of navigation</testIdea>
+      <testIdea acRef="AC-14">E2E test: Drop file on InboxDropZone, verify uploaded to "Upload Inbox" folder path</testIdea>
+      <testIdea acRef="Edge Case">Test uploading file with exactly 15MB size (boundary condition)</testIdea>
+      <testIdea acRef="Edge Case">Test uploading 21 files (exceeds 20-file limit), verify error</testIdea>
+      <testIdea acRef="Edge Case">Test network interruption during upload, verify retry or graceful failure</testIdea>
+      <testIdea acRef="Edge Case">Test special characters in filenames (spaces, unicode, symbols)</testIdea>
+      <testIdea acRef="Edge Case">Test multiple duplicate files in single bulk upload, each triggers separate dialog</testIdea>
+      <testIdea acRef="Edge Case">Test filename with existing (1) suffix, verify increments to (2) correctly</testIdea>
+    </ideas>
+  </tests>
+
+  <environmentVariables>
+    <variable>
+      <name>AWS_REGION</name>
+      <value>us-east-1</value>
+      <required>true</required>
+      <description>AWS region for S3 bucket</description>
+    </variable>
+    <variable>
+      <name>AWS_ACCESS_KEY_ID</name>
+      <value>[from AWS IAM]</value>
+      <required>true</required>
+      <description>AWS IAM access key with S3 permissions</description>
+    </variable>
+    <variable>
+      <name>AWS_SECRET_ACCESS_KEY</name>
+      <value>[from AWS IAM]</value>
+      <required>true</required>
+      <description>AWS IAM secret key</description>
+    </variable>
+    <variable>
+      <name>S3_BUCKET_NAME</name>
+      <value>assemble-ai-documents-[env]</value>
+      <required>true</required>
+      <description>S3 bucket name for document storage (private bucket)</description>
+    </variable>
+  </environmentVariables>
+</story-context>

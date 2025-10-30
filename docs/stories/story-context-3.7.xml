@@ -1,0 +1,208 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>3.7</storyId>
+    <title>Contractor Card Implementation</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/3-7-contractor-card-implementation.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>Contractor Card with same functionality as Consultant Card</iWant>
+    <soThat>I can manage contractor procurement</soThat>
+    <tasks>
+      - Create Contractor Card component (AC: 43, 44)
+      - Replicate all section functionality (AC: 45)
+      - Apply contractor-specific terminology (AC: 46)
+      - Create independent database schema (AC: 47)
+      - Update document filing paths
+      - Testing
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="43">Contractor Card structure identical to Consultant Card</criterion>
+    <criterion id="44">Tabs for each toggled-on contractor trade</criterion>
+    <criterion id="45">All sections replicated from Consultant Card</criterion>
+    <criterion id="46">Contractor-specific terminology where appropriate</criterion>
+    <criterion id="47">Independent data storage from Consultant Card</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Consultant &amp; Contractor Management</title>
+        <section>Data Models and Contracts</section>
+        <snippet>ContractorCard model mirrors ConsultantCard with trade field instead of discipline. ContractorSection uses ContractorSectionType enum with same 10 section types. Both cards share Firm model for firm management.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Consultant &amp; Contractor Management</title>
+        <section>Workflows and Sequencing</section>
+        <snippet>Contractor Card Creation Flow: User toggles contractor in Plan Card → System creates ContractorCard with trade → System creates 10 default sections → System adds tab to UI. Flow mirrors consultant workflow.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic Breakdown</title>
+        <section>Epic 3 Story 3.7</section>
+        <snippet>Contractor Card implementation with same functionality as Consultant Card, contractor-specific terminology, independent data storage. All sections replicated from Consultant Card.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Decision Architecture</title>
+        <section>State Management</section>
+        <snippet>Zustand stores manage card state with workspaceStore tracking active cards, collapsed sections, active consultants/contractors. Contractor state uses tradeId instead of disciplineId.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR012</section>
+        <snippet>System shall provide Contractor Card for managing contractor information and scopes with predefined sections identical to Consultant Card. Contractor List has 20 trades.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>assemble-app/src/components/cards/ConsultantCard.tsx</path>
+        <kind>component</kind>
+        <symbol>ConsultantCard</symbol>
+        <lines>1-100</lines>
+        <reason>Reference implementation for Contractor Card. Shows card structure, tab system, section rendering, and integration with workspaceStore.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/stores/workspaceStore.ts</path>
+        <kind>store</kind>
+        <symbol>WorkspaceStore</symbol>
+        <lines>1-100</lines>
+        <reason>Defines contractor state management interfaces. Already includes activeContractors, contractorStatuses, toggleContractor, and related actions for contractor cards.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/components/cards/sections/FirmsSection.tsx</path>
+        <kind>component</kind>
+        <symbol>FirmsSection</symbol>
+        <lines>N/A</lines>
+        <reason>Reusable section component for firm management. Can be shared between ConsultantCard and ContractorCard with different props.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/lib/constants/consultants.ts</path>
+        <kind>constants</kind>
+        <symbol>consultantDisciplines</symbol>
+        <lines>N/A</lines>
+        <reason>Pattern for contractor constants. Create parallel contractors.ts with 20 contractor trades list.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <ecosystem name="npm">
+        <package name="react" version="19.1.0" />
+        <package name="next" version="15.5.6" />
+        <package name="zustand" version="^5.0.8" />
+        <package name="@prisma/client" version="^6.0.1" />
+        <package name="@dnd-kit/core" version="^6.3.1" />
+        <package name="@dnd-kit/sortable" version="^10.0.0" />
+        <package name="lucide-react" version="^0.548.0" />
+        <package name="react-hook-form" version="^7.65.0" />
+        <package name="zod" version="^3.25.76" />
+        <package name="clsx" version="^2.1.1" />
+        <package name="tailwind-merge" version="^3.3.1" />
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Follow three-tier data architecture (Cards → Sections → Items) established in Epic 1</constraint>
+    <constraint>Use Zustand workspaceStore for card state management - contractor state interfaces already defined</constraint>
+    <constraint>Implement as separate component (ContractorCard.tsx) rather than shared abstraction with ConsultantCard</constraint>
+    <constraint>Place new component in assemble-app/src/components/cards/ directory</constraint>
+    <constraint>Share section components (FirmsSection, ScopeSection, etc.) between consultant and contractor cards where possible</constraint>
+    <constraint>Use contractor-specific terminology: "Trade" instead of "Discipline", "Contractor" instead of "Consultant"</constraint>
+    <constraint>ContractorCard must have CardType enum value 'CONTRACTOR' in Prisma schema (already exists)</constraint>
+    <constraint>Document filing paths use /Contractor/ instead of /Consultant/ in path structure</constraint>
+    <constraint>Support 20 contractor trades from Plan Card (vs 36 consultant disciplines)</constraint>
+    <constraint>All mutations must maintain audit trail (createdBy, updatedBy, deletedAt fields)</constraint>
+    <constraint>Implement soft-delete pattern - never hard delete data</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>WorkspaceStore - Contractor Actions</name>
+      <kind>zustand-store</kind>
+      <signature>
+toggleContractor: (projectId: string, tradeId: string) => void;
+updateContractorStatus: (projectId: string, tradeId: string, status: Partial&lt;ContractorStatus&gt;) => void;
+getContractorStatus: (projectId: string, tradeId: string) => ContractorStatus | undefined;
+isContractorActive: (projectId: string, tradeId: string) => boolean;
+activeContractors: Record&lt;string, string[]&gt;; // projectId -> tradeId[]
+contractorStatuses: Record&lt;string, Record&lt;string, ContractorStatus&gt;&gt;; // projectId -> tradeId -> status
+      </signature>
+      <path>assemble-app/src/stores/workspaceStore.ts</path>
+    </interface>
+    <interface>
+      <name>ContractorCard Component Props</name>
+      <kind>react-component</kind>
+      <signature>
+interface ContractorCardProps {
+  projectId: string;
+  onClose: () => void;
+}
+      </signature>
+      <path>assemble-app/src/components/cards/ContractorCard.tsx (to be created)</path>
+    </interface>
+    <interface>
+      <name>Prisma CardType Enum</name>
+      <kind>enum</kind>
+      <signature>
+enum CardType {
+  PLAN
+  CONSULTANT
+  CONTRACTOR  // Already exists in schema
+  PROCURE
+  COST_PLANNING
+  SCHEME_DESIGN
+  DETAIL_DESIGN
+  DOCUMENTS
+  DELIVER
+}
+      </signature>
+      <path>assemble-app/prisma/schema.prisma</path>
+    </interface>
+    <interface>
+      <name>Section Content Components</name>
+      <kind>react-component</kind>
+      <signature>
+// Reusable section components accepting cardType prop
+FirmsSection({ projectId, disciplineId?, tradeId?, cardType })
+ScopeSection({ projectId, disciplineId?, tradeId?, cardType })
+DeliverablesSection({ projectId, disciplineId?, tradeId?, cardType })
+FeeStructureSection({ projectId, disciplineId?, tradeId?, cardType })
+TenderReleaseSection({ projectId, disciplineId?, tradeId?, cardType })
+RFISection({ projectId, disciplineId?, tradeId?, cardType })
+TenderEvaluationSection({ projectId, disciplineId?, tradeId?, cardType })
+      </signature>
+      <path>assemble-app/src/components/cards/sections/</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Testing uses Vitest for unit/integration tests with @testing-library/react. Component tests verify rendering, user interactions, and state updates. Integration tests validate database operations and card creation flow. E2E tests use Playwright for complete user workflows. All tests follow AAA pattern (Arrange, Act, Assert). Mock external dependencies (Prisma, Zustand stores) in unit tests.
+    </standards>
+    <locations>
+      <location>assemble-app/src/components/cards/__tests__/ContractorCard.test.tsx</location>
+      <location>assemble-app/tests/integration/contractor-card.test.ts</location>
+      <location>assemble-app/e2e/contractor-procurement.spec.ts</location>
+    </locations>
+    <ideas>
+      <idea criteriaId="43">Unit test: Render ContractorCard, verify 10 sections match ConsultantCard structure</idea>
+      <idea criteriaId="44">Integration test: Toggle 3 contractor trades in Plan Card, verify 3 tabs created in ContractorCard</idea>
+      <idea criteriaId="45">E2E test: Navigate through all 10 sections, verify each section renders and functions correctly</idea>
+      <idea criteriaId="46">Unit test: Verify all labels use "Trade" terminology instead of "Discipline"</idea>
+      <idea criteriaId="47">Integration test: Create contractor data, verify stored separately from consultant data in database</idea>
+      <idea criteriaId="all">E2E test: Complete workflow - toggle trade → add firms → upload submission → evaluate tender</idea>
+      <idea criteriaId="all">Integration test: Verify workspaceStore contractor actions (toggleContractor, updateContractorStatus)</idea>
+      <idea criteriaId="all">Unit test: Verify empty state when no contractors toggled</idea>
+    </ideas>
+  </tests>
+</story-context>
