@@ -265,7 +265,16 @@ export function ObjectivesSection({ projectId }: ObjectivesSectionProps) {
           e.preventDefault();
           setIsDragOver(true);
         }}
-        onDragLeave={() => setIsDragOver(false)}
+        onDragLeave={(e) => {
+          e.stopPropagation();
+          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          const x = e.clientX;
+          const y = e.clientY;
+          // Only set isDragOver to false if mouse actually left the container bounds
+          if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
+            setIsDragOver(false);
+          }
+        }}
         onDrop={handleDrop}
       >
         {isDragOver && (

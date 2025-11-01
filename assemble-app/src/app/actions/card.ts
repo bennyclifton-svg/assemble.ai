@@ -1669,3 +1669,63 @@ export async function getCardsForTenderSelection(
     };
   }
 }
+
+/**
+ * Ensure a consultant card exists for a discipline
+ * Creates the card if it doesn't exist, otherwise returns existing card
+ *
+ * This is called when a user activates a consultant discipline in the Plan Card
+ */
+export async function ensureConsultantCard(
+  projectId: string,
+  disciplineId: string
+): Promise<ActionResult<{ cardId: string }>> {
+  try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return {
+        success: false,
+        error: { message: 'Unauthorized', code: 'UNAUTHORIZED' },
+      };
+    }
+
+    // Check if card already exists
+    const existingCard = await prisma.card.findUnique({
+      where: { id: disciplineId },
+      select: { id: true },
+    });
+
+    if (existingCard) {
+      return {
+        success: true,
+        data: { cardId: existingCard.id },
+      };
+    }
+
+    // Create the card
+    const card = await prisma.card.create({
+      data: {
+        id: disciplineId,
+        projectId,
+        type: 'CONSULTANT',
+        createdBy: userId,
+        updatedBy: userId,
+      },
+    });
+
+    return {
+      success: true,
+      data: { cardId: card.id },
+    };
+  } catch (error) {
+    console.error('Error ensuring consultant card:', error);
+    return {
+      success: false,
+      error: {
+        message: error instanceof Error ? error.message : 'Failed to create consultant card',
+        code: 'SERVER_ERROR',
+      },
+    };
+  }
+}

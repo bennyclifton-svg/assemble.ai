@@ -16,10 +16,10 @@ interface ContextSelection {
   lastSelectedDocument: string | null;
   allDocuments: Array<{ id: string }>;
   selectedSections: {
-    plan: Set<string>;
     consultant: Map<string, Set<string>>;
     contractor: Map<string, Set<string>>;
   };
+  documentScheduleSelected: boolean;
 }
 
 export interface SelectionStore {
@@ -28,6 +28,9 @@ export interface SelectionStore {
 
   // Active context (current discipline/trade being edited)
   activeContext: string | null;
+
+  // Global Plan Card selections (shared across all disciplines)
+  selectedPlanSections: Set<string>;
 
   // Context management
   setActiveContext: (contextId: string) => void;
@@ -38,7 +41,6 @@ export interface SelectionStore {
   getLastSelectedDocument: () => string | null;
   getAllDocuments: () => Array<{ id: string }>;
   getSelectedSections: () => {
-    plan: Set<string>;
     consultant: Map<string, Set<string>>;
     contractor: Map<string, Set<string>>;
   };
@@ -53,6 +55,10 @@ export interface SelectionStore {
   toggleSection: (cardType: 'plan' | 'consultant' | 'contractor', discipline: string, sectionId: string) => void;
   clearSections: () => void;
 
+  // Document Schedule checkbox
+  getDocumentScheduleSelected: () => boolean;
+  toggleDocumentSchedule: () => void;
+
   // Global actions
   clearSelection: () => void;
   getSelectionForTender: () => TenderSelection;
@@ -64,10 +70,10 @@ const createDefaultContextSelection = (): ContextSelection => ({
   lastSelectedDocument: null,
   allDocuments: [],
   selectedSections: {
-    plan: new Set(),
     consultant: new Map(),
     contractor: new Map(),
   },
+  documentScheduleSelected: false,
 });
 
 // Helper functions for serialization (Sets/Maps not JSON-serializable)
@@ -76,7 +82,6 @@ const serializeContextSelection = (ctx: ContextSelection) => ({
   lastSelectedDocument: ctx.lastSelectedDocument,
   allDocuments: ctx.allDocuments,
   selectedSections: {
-    plan: Array.from(ctx.selectedSections.plan),
     consultant: Object.fromEntries(
       Array.from(ctx.selectedSections.consultant.entries()).map(([k, v]) => [k, Array.from(v)])
     ),
@@ -84,6 +89,7 @@ const serializeContextSelection = (ctx: ContextSelection) => ({
       Array.from(ctx.selectedSections.contractor.entries()).map(([k, v]) => [k, Array.from(v)])
     ),
   },
+  documentScheduleSelected: ctx.documentScheduleSelected,
 });
 
 const deserializeContextSelection = (serialized: any): ContextSelection => ({
@@ -91,7 +97,6 @@ const deserializeContextSelection = (serialized: any): ContextSelection => ({
   lastSelectedDocument: serialized.lastSelectedDocument || null,
   allDocuments: serialized.allDocuments || [],
   selectedSections: {
-    plan: new Set(serialized.selectedSections?.plan || []),
     consultant: new Map(
       Object.entries(serialized.selectedSections?.consultant || {}).map(([k, v]: [string, any]) => [
         k,
@@ -105,6 +110,7 @@ const deserializeContextSelection = (serialized: any): ContextSelection => ({
       ])
     ),
   },
+  documentScheduleSelected: serialized.documentScheduleSelected || false,
 });
 
 const serializeState = (state: SelectionStore) => ({
@@ -115,17 +121,34 @@ const serializeState = (state: SelectionStore) => ({
     ])
   ),
   activeContext: state.activeContext,
+  selectedPlanSections: Array.from(state.selectedPlanSections),
 });
 
-const deserializeState = (serialized: any): Partial<SelectionStore> => ({
-  selectionsByContext: new Map(
-    Object.entries(serialized.selectionsByContext || {}).map(([contextId, ctx]: [string, any]) => [
-      contextId,
-      deserializeContextSelection(ctx),
-    ])
-  ),
-  activeContext: serialized.activeContext || null,
-});
+const deserializeState = (serialized: any): Partial<SelectionStore> => {
+  // Validate Plan section IDs - they should be UUIDs, not lowercase names
+  const planSections = serialized.selectedPlanSections || [];
+  const validPlanSections = planSections.filter((id: string) => {
+    // UUID format check (loose - just check if it's not a lowercase word like 'details')
+    return id.length > 20 && id.includes('-');
+  });
+
+  // If we filtered out invalid sections, log a warning
+  if (planSections.length !== validPlanSections.length) {
+    console.warn('⚠️ Clearing invalid Plan section selections from localStorage (found lowercase names instead of UUIDs)');
+    console.warn('Invalid sections:', planSections.filter((id: string) => !validPlanSections.includes(id)));
+  }
+
+  return {
+    selectionsByContext: new Map(
+      Object.entries(serialized.selectionsByContext || {}).map(([contextId, ctx]: [string, any]) => [
+        contextId,
+        deserializeContextSelection(ctx),
+      ])
+    ),
+    activeContext: serialized.activeContext || null,
+    selectedPlanSections: new Set(validPlanSections),
+  };
+};
 
 export const useSelectionStore = create<SelectionStore>()(
   persist(
@@ -133,6 +156,7 @@ export const useSelectionStore = create<SelectionStore>()(
       // Initial state
       selectionsByContext: new Map(),
       activeContext: null,
+      selectedPlanSections: new Set(),
 
       // Set active context (discipline/trade)
       setActiveContext: (contextId: string) => {
@@ -178,14 +202,12 @@ export const useSelectionStore = create<SelectionStore>()(
         const state = get();
         if (!state.activeContext) {
           return {
-            plan: new Set(),
             consultant: new Map(),
             contractor: new Map(),
           };
         }
         const ctx = state.selectionsByContext.get(state.activeContext);
         return ctx?.selectedSections || {
-          plan: new Set(),
           consultant: new Map(),
           contractor: new Map(),
         };
@@ -279,50 +301,61 @@ export const useSelectionStore = create<SelectionStore>()(
       // Toggle section selection
       toggleSection: (cardType, discipline, sectionId) => {
         const state = get();
-        if (!state.activeContext) return;
-
-        const ctx = state.selectionsByContext.get(state.activeContext) || createDefaultContextSelection();
-        const sections = {
-          plan: new Set(ctx.selectedSections.plan),
-          consultant: new Map(ctx.selectedSections.consultant),
-          contractor: new Map(ctx.selectedSections.contractor),
-        };
 
         if (cardType === 'plan') {
-          if (sections.plan.has(sectionId)) {
-            sections.plan.delete(sectionId);
+          // Plan sections are global (not context-specific)
+          const newPlanSections = new Set(state.selectedPlanSections);
+          if (newPlanSections.has(sectionId)) {
+            newPlanSections.delete(sectionId);
           } else {
-            sections.plan.add(sectionId);
+            newPlanSections.add(sectionId);
           }
-        } else if (cardType === 'consultant') {
-          const disciplineSections = new Set(sections.consultant.get(discipline) || []);
-          if (disciplineSections.has(sectionId)) {
-            disciplineSections.delete(sectionId);
-          } else {
-            disciplineSections.add(sectionId);
-          }
-          sections.consultant.set(discipline, disciplineSections);
-        } else if (cardType === 'contractor') {
-          const tradeSections = new Set(sections.contractor.get(discipline) || []);
-          if (tradeSections.has(sectionId)) {
-            tradeSections.delete(sectionId);
-          } else {
-            tradeSections.add(sectionId);
-          }
-          sections.contractor.set(discipline, tradeSections);
-        }
+          set({ selectedPlanSections: newPlanSections });
+        } else {
+          // Consultant/Contractor sections are context-specific
+          if (!state.activeContext) return;
 
-        const newMap = new Map(state.selectionsByContext);
-        newMap.set(state.activeContext, {
-          ...ctx,
-          selectedSections: sections,
-        });
-        set({ selectionsByContext: newMap });
+          const ctx = state.selectionsByContext.get(state.activeContext) || createDefaultContextSelection();
+          const sections = {
+            consultant: new Map(ctx.selectedSections.consultant),
+            contractor: new Map(ctx.selectedSections.contractor),
+          };
+
+          if (cardType === 'consultant') {
+            const disciplineSections = new Set(sections.consultant.get(discipline) || []);
+            if (disciplineSections.has(sectionId)) {
+              disciplineSections.delete(sectionId);
+            } else {
+              disciplineSections.add(sectionId);
+            }
+            sections.consultant.set(discipline, disciplineSections);
+          } else if (cardType === 'contractor') {
+            const tradeSections = new Set(sections.contractor.get(discipline) || []);
+            if (tradeSections.has(sectionId)) {
+              tradeSections.delete(sectionId);
+            } else {
+              tradeSections.add(sectionId);
+            }
+            sections.contractor.set(discipline, tradeSections);
+          }
+
+          const newMap = new Map(state.selectionsByContext);
+          newMap.set(state.activeContext, {
+            ...ctx,
+            selectedSections: sections,
+          });
+          set({ selectionsByContext: newMap });
+        }
       },
 
       // Clear section selection for current context
       clearSections: () => {
         const state = get();
+
+        // Clear global Plan sections
+        set({ selectedPlanSections: new Set() });
+
+        // Clear context-specific sections
         if (!state.activeContext) return;
 
         const ctx = state.selectionsByContext.get(state.activeContext) || createDefaultContextSelection();
@@ -330,7 +363,6 @@ export const useSelectionStore = create<SelectionStore>()(
         newMap.set(state.activeContext, {
           ...ctx,
           selectedSections: {
-            plan: new Set(),
             consultant: new Map(),
             contractor: new Map(),
           },
@@ -348,6 +380,28 @@ export const useSelectionStore = create<SelectionStore>()(
         set({ selectionsByContext: newMap });
       },
 
+      // Get Document Schedule checkbox state
+      getDocumentScheduleSelected: () => {
+        const state = get();
+        if (!state.activeContext) return false;
+        const ctx = state.selectionsByContext.get(state.activeContext);
+        return ctx?.documentScheduleSelected || false;
+      },
+
+      // Toggle Document Schedule checkbox
+      toggleDocumentSchedule: () => {
+        const state = get();
+        if (!state.activeContext) return;
+
+        const ctx = state.selectionsByContext.get(state.activeContext) || createDefaultContextSelection();
+        const newMap = new Map(state.selectionsByContext);
+        newMap.set(state.activeContext, {
+          ...ctx,
+          documentScheduleSelected: !ctx.documentScheduleSelected,
+        });
+        set({ selectionsByContext: newMap });
+      },
+
       // Get selection formatted for tender package (current context)
       getSelectionForTender: () => {
         const state = get();
@@ -355,7 +409,7 @@ export const useSelectionStore = create<SelectionStore>()(
           return {
             documents: [],
             sections: {
-              plan: [],
+              plan: Array.from(state.selectedPlanSections), // Use global Plan sections
               consultant: {},
               contractor: {},
             },
@@ -366,7 +420,7 @@ export const useSelectionStore = create<SelectionStore>()(
         return {
           documents: Array.from(ctx.selectedDocuments),
           sections: {
-            plan: Array.from(ctx.selectedSections.plan),
+            plan: Array.from(state.selectedPlanSections), // Use global Plan sections
             consultant: Object.fromEntries(
               Array.from(ctx.selectedSections.consultant.entries()).map(([discipline, sections]) => [
                 discipline,

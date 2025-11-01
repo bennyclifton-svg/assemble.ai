@@ -8,6 +8,7 @@ import {
   statusConfig,
   type StatusKey,
 } from '@/lib/constants/consultants';
+import { ensureConsultantCard } from '@/app/actions/card';
 
 interface ConsultantListSectionProps {
   projectId: string;
@@ -24,9 +25,21 @@ export function ConsultantListSection({ projectId }: ConsultantListSectionProps)
 
   const projectStatuses = allStatuses[projectId] || {};
 
-  const handleToggleConsultant = (disciplineId: string) => {
+  const handleToggleConsultant = async (disciplineId: string) => {
+    const currentStatus = getConsultantStatus(projectId, disciplineId);
+    const willBeActive = !currentStatus?.isActive;
+
+    // If activating, ensure the consultant card exists in the database
+    if (willBeActive) {
+      const result = await ensureConsultantCard(projectId, disciplineId);
+      if (!result.success) {
+        console.error('Failed to create consultant card:', result.error);
+        return; // Don't toggle if card creation failed
+      }
+    }
+
+    // Update local store
     toggleConsultant(projectId, disciplineId);
-    // TODO: Call Server Action to persist to database
   };
 
   const handleToggleStatus = (disciplineId: string, statusKey: StatusKey) => {

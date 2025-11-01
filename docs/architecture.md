@@ -44,6 +44,7 @@ This establishes the base architecture with these decisions:
 | Date Handling | date-fns | 3.0.0 | All | Lightweight, tree-shakeable |
 | Testing | Vitest + Playwright | Latest | All | Fast unit tests, reliable E2E |
 | Error Monitoring | Sentry | Latest | All | Production error tracking |
+| Spreadsheet/Data Grid | Handsontable | Latest | Epic 4, 5 | Excel-like editing with HyperFormula engine (386+ functions), hierarchical data support, essential for tender price evaluation and cost planning financial tables |
 
 ## Project Structure
 
@@ -99,6 +100,16 @@ assemble-ai/
 │   │   │   ├── Section.tsx
 │   │   │   ├── ItemRow.tsx
 │   │   │   └── ItemTable.tsx
+│   │   ├── tender/                   # Tender evaluation components
+│   │   │   ├── PriceEvaluationTable.tsx
+│   │   │   ├── useHandsontableConfig.ts
+│   │   │   └── useTenderCalculations.ts
+│   │   ├── cost/                     # Cost planning components
+│   │   │   ├── CostSummaryTable.tsx
+│   │   │   ├── InvoiceRegister.tsx
+│   │   │   ├── VariationRegister.tsx
+│   │   │   ├── useCostCalculations.ts
+│   │   │   └── useCostSummaryConfig.ts
 │   │   └── workspace/
 │   │       ├── NavigationSidebar.tsx
 │   │       ├── DocumentFolderTree.tsx
@@ -170,8 +181,8 @@ assemble-ai/
 | Epic 1: Foundation & Core Data | - Prisma schema (Card, Section, Item)<br/>- Zustand stores (workspaceStore)<br/>- Navigation components<br/>- Card system components | Next.js 15, Prisma 6, Zustand, TypeScript |
 | Epic 2: Document Management & AI | - S3 service layer<br/>- Document processor service<br/>- AI extractors<br/>- Server Actions for uploads | AWS S3, GPT-4 Vision, pdf-parse, Vercel AI SDK |
 | Epic 3: Consultant & Contractor | - Firm management routers<br/>- Consultant/Contractor Card components<br/>- Tender evaluation tables<br/>- Multi-select implementation | tRPC, dnd-kit, React Hook Form |
-| Epic 4: Tender Package Generation | - Tender generator service<br/>- Price structure service<br/>- Immutability enforcement<br/>- PDF generation | GPT-4, react-pdf, Server Actions |
-| Epic 5: Cost Planning & Financial | - Cost tracking components<br/>- Invoice/variation registers<br/>- Financial calculations<br/>- Reporting views | tRPC queries, Recharts, date-fns |
+| Epic 4: Tender Package Generation | - Tender generator service<br/>- Price structure service<br/>- Price evaluation spreadsheets<br/>- Immutability enforcement<br/>- PDF generation | GPT-4, Handsontable + HyperFormula, react-pdf, Server Actions |
+| Epic 5: Cost Planning & Financial | - Cost Summary spreadsheet<br/>- Invoice register spreadsheet<br/>- Variation register spreadsheet<br/>- Financial calculations<br/>- AI cost reporting | Handsontable + HyperFormula, GPT-4, tRPC queries, date-fns |
 
 ## Technology Stack Details
 
@@ -507,6 +518,12 @@ async function processDocument(fileId: string): Promise<ActionResult<ExtractedDa
 - AI processing < 10 seconds
 - File upload progress indication
 
+**Bundle Size Considerations:**
+- Handsontable base: ~273 KB
+- Optimized with selective imports: ~120 KB (56% reduction)
+- Use selective plugin imports vs registerAllModules()
+- Acceptable trade-off for Excel-like functionality
+
 ### Backend Performance
 
 **Database Optimization:**
@@ -696,9 +713,163 @@ npm run test:e2e
 - `src/app/(dashboard)/projects/[id]/page.tsx` - Pass projectId and documents to sidebar
 - `src/services/folderStructure.ts` - Updated folder order and structure
 
+### ADR-008: CardSectionSelector Consolidation
+**Date:** 2025-01-XX
+**Status:** Accepted
+**Context:** Two separate components existed for section selection in tender workflows:
+- `ComponentSelector.tsx` - Simple 2-column layout for Plan + Card sections in TenderPackSection
+- `CardSectionSelector.tsx` - Advanced multi-discipline/trade selector with tabs in TenderDocumentSection
+- ComponentSelector lacked support for multiple disciplines/trades
+- Duplication of selection logic and UI patterns
+- Inconsistent user experience between Tender Document and Tender Pack sections
+
+**Decision:** Consolidate into single CardSectionSelector component with enhanced layout:
+- Replace ComponentSelector entirely with CardSectionSelector
+- Add 2-column grid layout within each section for compact checkbox display
+- Integrate Document Schedule checkbox directly into CardSectionSelector
+- Move CardSectionSelector from Tender Document Section to Tender Pack Section
+- Simplify Tender Document Section to focus only on document management
+
+**Implementation:**
+```typescript
+// CardSectionSelector enhanced structure
+<div className="space-y-6">
+  {/* Plan Card Sections */}
+  <div className="border rounded-lg p-4">
+    <div className="grid grid-cols-2 gap-x-6">
+      {/* Checkboxes in 2-column grid */}
+    </div>
+  </div>
+
+  {/* Consultant Card Sections */}
+  <div>
+    {/* Discipline tabs for navigation */}
+    <div className="flex gap-2 mb-3 flex-wrap">
+      {/* Tab buttons with selection counts */}
+    </div>
+    {/* Active discipline sections in 2-column grid */}
+    <div className="grid grid-cols-2 gap-x-6">
+      {/* Checkboxes with item previews */}
+    </div>
+  </div>
+
+  {/* Contractor Card Sections - similar pattern */}
+
+  {/* Document Schedule */}
+  <div className="border rounded-lg p-4">
+    <Checkbox id="document-schedule" />
+    <label>Include Document Schedule in Tender Package</label>
+  </div>
+</div>
+```
+
+**Consequences:**
+- ✅ Single source of truth for section selection UI
+- ✅ Consistent user experience across tender workflows
+- ✅ Support for multiple disciplines/trades in Tender Pack Section
+- ✅ Reduced code duplication and maintenance burden
+- ✅ Document Schedule integrated directly into selection interface
+- ✅ Simplified Tender Document Section focused on document operations
+- ⚠️ More complex CardSectionSelector component (acceptable for better UX)
+
+**Files Affected:**
+- `assemble-app/src/components/tender/CardSectionSelector.tsx` - Enhanced with 2-column layout + Document Schedule
+- `assemble-app/src/components/tender/ComponentSelector.tsx` - REMOVED (deprecated)
+- `assemble-app/src/components/cards/sections/TenderDocumentSection.tsx` - Simplified UI, removed section selector
+- `assemble-app/src/components/cards/sections/TenderPackSection.tsx` - Now uses CardSectionSelector
+- `docs/stories/2-5-document-and-section-selection-for-tender-packages.md` - Updated with refactoring notes
+- `docs/stories/4-1-tender-package-assembly-interface.md` - Updated component structure
+
+### ADR-007: Handsontable for Tender Price Evaluation
+**Date:** 2025-11-01
+**Status:** Accepted
+**Context:** Price evaluation tables in Epic 4 (Stories 4.5, 4.6) require advanced spreadsheet functionality:
+- Excel-like inline editing for price entry
+- Formula calculations for sub-totals and grand totals
+- Hierarchical row structure (categories with sub-items)
+- Copy/paste compatibility with Excel/Google Sheets
+- Side-by-side comparison of 1-5 firms
+- AI-populated cells with visual indicators
+
+Custom implementation with shadcn/ui would require:
+- Building formula engine from scratch
+- Implementing hierarchical row management
+- Creating Excel-compatible copy/paste logic
+- Estimated 2-3 weeks additional development time
+
+**Decision:** Adopt Handsontable with **non-commercial/development license** for price evaluation tables
+- Package: `@handsontable/react` + `handsontable`
+- License: Non-commercial and evaluation (free for development)
+- HyperFormula engine included (386+ Excel functions)
+- Used exclusively in `src/components/tender/PriceEvaluationTable.tsx`
+
+**Alternatives Considered:**
+1. **AG Grid Enterprise** ($999/dev/year)
+   - ✅ Best-in-class performance and tree data
+   - ❌ No native formula engine (requires custom integration)
+   - ❌ Higher cost, more complex for this use case
+
+2. **TanStack Table** (Free, open-source)
+   - ✅ Zero licensing cost, highly flexible
+   - ❌ Headless - requires building all UI and features
+   - ❌ No formula engine, extensive custom development needed
+
+3. **Custom shadcn/ui extensions** (Original plan)
+   - ✅ No licensing cost, full control
+   - ❌ 2-3 weeks development time for formulas + hierarchy
+   - ❌ Not feasible within sprint timeline
+
+**Why Handsontable:**
+- True Excel-like UX (exactly what construction managers expect)
+- HyperFormula engine handles calculations automatically
+- Nested rows with collapsible categories built-in
+- Copy/paste from Excel/Sheets works out-of-box
+- Non-commercial license covers development phase
+- First-class React 19 + Next.js 15 compatibility
+
+**Consequences:**
+- ✅ **Saves 2-3 weeks** development time vs custom implementation
+- ✅ **Excel formula compatibility** - users can leverage familiar formulas
+- ✅ **Professional UX** - construction industry standard spreadsheet interface
+- ⚠️ **Bundle size impact**: ~273 KB base (reducible to ~120 KB with selective imports)
+- ⚠️ **Licensing consideration**: Non-commercial license for development; production deployment would require commercial license ($899/dev/year) or transition to open-source alternative
+- ⚠️ **Known limitation**: Nested rows + formulas conflict - resolved with hybrid approach (visual hierarchy + React-side calculations documented in Story 4.5)
+- ⚠️ **Client-side only**: Requires `'use client'` directive in Next.js 15
+
+**Implementation Notes:**
+- Hybrid calculation approach: NestedRows plugin for visual hierarchy, custom React hook (`useTenderCalculations.ts`) for sub-totals
+- Custom cell renderers for AI-populated cells (Story 4.6)
+- Zustand store integration via `afterChange` callback for state synchronization
+- Bundle optimization via selective plugin imports (ContextMenu, ManualRowMove, NestedRows only)
+
+**Files Affected:**
+- Epic 4 (Tender Evaluation):
+  - `src/components/tender/PriceEvaluationTable.tsx` - Main Handsontable component
+  - `src/components/tender/useHandsontableConfig.ts` - Configuration hook
+  - `src/components/tender/useTenderCalculations.ts` - Calculation workaround hook
+  - `docs/stories/4-5-tender-evaluation-price-setup.md` - Implementation guidance
+  - `docs/stories/4-6-ai-price-extraction-from-submissions.md` - AI integration with Handsontable
+- Epic 5 (Cost Planning & Financial):
+  - `src/components/cost/CostSummaryTable.tsx` - Cost Summary Handsontable component
+  - `src/components/cost/InvoiceRegister.tsx` - Invoice Register Handsontable component
+  - `src/components/cost/VariationRegister.tsx` - Variation Register Handsontable component
+  - `src/components/cost/useCostCalculations.ts` - Cost calculation hook
+  - `src/components/cost/useCostSummaryConfig.ts` - Cost Summary configuration hook
+  - `docs/stories/5-2-cost-summary-table.md` - Implementation guidance
+  - `docs/stories/5-4-invoice-register-implementation.md` - Implementation guidance
+  - `docs/stories/5-6-variation-register.md` - Implementation guidance
+
+**License Path Forward:**
+- **Phase 1 (Current)**: Non-commercial license for development and evaluation
+- **Phase 2 (Pre-Production)**: Evaluate production licensing options:
+  - Option A: Purchase commercial licenses ($899/dev/year) if budget allows
+  - Option B: Migrate to AG Grid + HyperFormula integration
+  - Option C: Migrate to TanStack Table with custom formula engine
+  - Decision point: Before production deployment
+
 ---
 
 _Generated by BMAD Decision Architecture Workflow v1.0_
 _Date: 2024-10-25_
-_Updated: 2025-10-28_
+_Updated: 2025-11-01_
 _For: Benny_

@@ -12,6 +12,15 @@ So that I can specify exactly what contractors should reference and include rele
 - **Dependencies**: Story 2.1 (Document Repository), Story 2.4 (Card content available)
 - **Current Status**: ⚠️ NEEDS REWORK - Implementation has critical issues (see below)
 
+## Recent Changes (UI Refactoring)
+**Date**: 2025-01-XX
+**Refactoring**: Simplified Tender Document Section UI
+- Removed nested configuration sections (Plan Card Sections, Consultant Card Sections with tabs)
+- Removed Instructions Box from Tender Document Section
+- Relocated section selection UI to Tender Pack Section (Story 4.1)
+- Document action buttons (Save List, Retrieve List, Clear Saved) moved to top of section
+- Section selection functionality preserved and enhanced in CardSectionSelector component
+
 ## Acceptance Criteria
 1. Display ALL existing project documents from repository (Story 2.1) - NO upload functionality
 2. Multi-select documents using Shift+click for range selection

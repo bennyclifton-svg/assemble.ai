@@ -410,6 +410,7 @@ export function FeeStructureSection({ projectId, disciplineId, planCardId: planC
       <div className="ag-theme-alpine" style={{ height: '500px', width: '100%' }}>
         <AgGridReact
           ref={gridRef}
+          theme="legacy"
           rowData={rowData}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}

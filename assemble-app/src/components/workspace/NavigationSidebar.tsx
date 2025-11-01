@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { CardType } from '@prisma/client';
 import {
   FileText,
@@ -69,7 +69,14 @@ export function NavigationSidebar({ projectId, documents = [] }: NavigationSideb
   const { activeCards, collapsedNav, openCard, closeCard, toggleNavigation, canAddCard, setSelectedFolder } =
     useWorkspaceStore();
 
-  const [isDocumentsExpanded, setIsDocumentsExpanded] = React.useState(true);
+  const [isDocumentsExpanded, setIsDocumentsExpanded] = useState(true);
+
+  // Fix hydration mismatch: defer disabled state calculation until after client hydration
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   const handleCardClick = (type: CardType, event: React.MouseEvent) => {
     const isActive = activeCards.includes(type);
@@ -134,7 +141,8 @@ export function NavigationSidebar({ projectId, documents = [] }: NavigationSideb
               {group.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeCards.includes(item.type);
-                const isDisabled = !isActive && !canAddCard();
+                // Only calculate disabled state after hydration to prevent SSR/CSR mismatch
+                const isDisabled = isHydrated ? (!isActive && !canAddCard()) : false;
                 const isDocuments = item.type === CardType.DOCUMENTS;
 
                 return (

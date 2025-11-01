@@ -77,9 +77,9 @@ development_status:
   4-2-ai-tender-package-generation: ready-for-dev
   4-3-tender-package-review-and-edit: ready-for-dev
   4-4-tender-package-finalization-and-lock: ready-for-dev
-  4-5-tender-evaluation-price-setup: backlog
-  4-6-ai-price-extraction-from-submissions: backlog
-  4-7-price-evaluation-advanced-features: backlog
+  4-5-tender-evaluation-price-setup: drafted
+  4-6-ai-price-extraction-from-submissions: drafted
+  4-7-price-evaluation-advanced-features: drafted
   4-8-non-price-evaluation: backlog
   4-9-tender-recommendation-report-generation: backlog
   4-10-contract-award-and-price-flow: backlog

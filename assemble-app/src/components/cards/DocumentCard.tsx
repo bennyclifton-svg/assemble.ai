@@ -63,11 +63,12 @@ export function DocumentCard({ projectId, documents: initialDocuments = [], curr
     }
   }, [projectId, initialDocuments.length]);
 
-  // Prevent default drag behavior globally to stop entire page becoming a drop zone
+  // Prevent default drag behavior globally to stop browser from opening dropped files
+  // BUT allow events to bubble to drop zones (don't stopPropagation)
   useEffect(() => {
     const preventDefaults = (e: DragEvent) => {
       e.preventDefault();
-      e.stopPropagation();
+      // Note: NOT calling e.stopPropagation() to allow drop zones to work
     };
 
     // Prevent default for drag events on document

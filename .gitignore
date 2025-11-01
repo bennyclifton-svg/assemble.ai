@@ -1,3 +1,6 @@
+# Monorepo .gitignore
+# Applies to root and all subdirectories (especially assemble-app/)
+
 # Dependencies
 node_modules/
 /node_modules
@@ -77,3 +80,6 @@ prisma/migrations/*_dev/
 *.tsbuildinfo
 next-env.d.ts
 BMAD-METHOD/
+
+# clerk configuration (can include secrets)
+/.clerk/

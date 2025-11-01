@@ -199,6 +199,7 @@ model Firm {
   displayOrder     Int
   rfis             Rfi[]
   addendums        Addendum[]
+  firmPrices       FirmPrice[]
   createdAt        DateTime   @default(now())
   createdBy        String
   updatedAt        DateTime   @updatedAt
@@ -264,4 +265,109 @@ model Addendum {
 
   @@index([firmId])
   @@index([displayOrder])
+}
+
+model TenderPackageConfig {
+  id                    String   @id @default(cuid())
+  consultantCardId      String?  @unique
+  contractorCardId      String?  @unique
+  selectedPlanSections  Json     // Array of Plan Card section IDs
+  selectedCardSections  Json     // Array of Consultant/Contractor Card section IDs
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  createdBy             String
+  updatedBy             String
+  tenderPackages        TenderPackage[]
+
+  @@index([consultantCardId])
+  @@index([contractorCardId])
+}
+
+model TenderPackage {
+  id                    String   @id @default(cuid())
+  consultantCardId      String?
+  contractorCardId      String?
+  firmId                String
+  configId              String
+  config                TenderPackageConfig @relation(fields: [configId], references: [id])
+  generatedContent      Json     // Structured sections
+  documentSchedule      Json     // Array of DocumentSchedule
+  status                String   @default("draft") // draft, locked
+  generatedAt           DateTime @default(now())
+  generatedBy           String   // User ID
+  aiModel               String   // e.g., "gpt-4-turbo"
+  generationTimeMs      Int      // Performance tracking
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([consultantCardId])
+  @@index([contractorCardId])
+  @@index([firmId])
+  @@index([configId])
+  @@index([status])
+}
+
+// Tender Evaluation Models (Story 4.5)
+model TenderEvaluation {
+  id               String   @id @default(cuid())
+  consultantCardId String?  // FK to ConsultantCard (via Card table)
+  contractorCardId String?  // FK to ContractorCard (via Card table)
+  projectId        String
+  disciplineId     String   // e.g., 'architect', 'structural'
+  tables           TenderEvaluationTable[]
+  grandTotal       Decimal  @db.Decimal(12, 2) @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  createdBy        String
+  updatedBy        String
+
+  @@unique([consultantCardId, projectId, disciplineId])
+  @@unique([contractorCardId, projectId, disciplineId])
+  @@index([projectId])
+  @@index([disciplineId])
+}
+
+model TenderEvaluationTable {
+  id               String   @id @default(cuid())
+  evaluationId     String
+  evaluation       TenderEvaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  tableNumber      Int      // 1 for Original, 2 for Adds/Subs, etc.
+  tableName        String   // "Original", "Adds and Subs"
+  items            EvaluationLineItem[]
+  subTotal         Decimal  @db.Decimal(12, 2) @default(0)
+  sortOrder        Int
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([evaluationId, tableNumber])
+}
+
+model EvaluationLineItem {
+  id                String   @id @default(cuid())
+  tableId           String
+  table             TenderEvaluationTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  description       String
+  firmPrices        FirmPrice[]  // One price per firm
+  isCategory        Boolean  @default(false)  // True for category headers
+  parentCategoryId  String?  // Self-referential for hierarchy
+  categorySubTotal  Decimal? @db.Decimal(12, 2) // For category rows
+  sortOrder         Int
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([tableId, sortOrder])
+}
+
+model FirmPrice {
+  id              String   @id @default(cuid())
+  lineItemId      String
+  lineItem        EvaluationLineItem @relation(fields: [lineItemId], references: [id], onDelete: Cascade)
+  firmId          String   // FK to Firm
+  firm            Firm     @relation(fields: [firmId], references: [id])
+  amount          Decimal  @db.Decimal(12, 2) @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([lineItemId, firmId])
+  @@index([firmId])
 }

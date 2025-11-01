@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   getDefaultFolderStructure,
@@ -30,6 +31,13 @@ export function DocumentFolderTree({
     expandAllFolders,
     isFolderExpanded
   } = useWorkspaceStore();
+
+  // Fix hydration mismatch: defer folder expansion state until after client hydration
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   const activeDisciplines = activeConsultants[projectId] || [];
   const activeTrades = activeContractors[projectId] || [];
@@ -79,6 +87,7 @@ export function DocumentFolderTree({
           selectedPath={selectedPath}
           level={0}
           baseIndent={24}
+          isHydrated={isHydrated}
         />
       ))}
     </div>
@@ -91,6 +100,7 @@ interface FolderTreeNodeProps {
   level: number;
   selectedPath: string;
   baseIndent: number;
+  isHydrated: boolean;
 }
 
 function FolderTreeNode({
@@ -98,13 +108,28 @@ function FolderTreeNode({
   projectId,
   level,
   selectedPath,
-  baseIndent
+  baseIndent,
+  isHydrated
 }: FolderTreeNodeProps) {
+  const router = useRouter();
   const { toggleFolder: toggleFolderInStore, setSelectedFolder, isFolderExpanded } = useWorkspaceStore();
+  const [isDragOver, setIsDragOver] = useState(false);
 
-  const isExpanded = isFolderExpanded(projectId, node.path);
+  // Only calculate expanded state after hydration to prevent SSR/CSR mismatch
+  const isExpanded = isHydrated ? isFolderExpanded(projectId, node.path) : false;
   const hasChildren = node.children.length > 0;
   const isSelected = selectedPath === node.path;
+
+  // Clear highlight when drag ends globally
+  useEffect(() => {
+    const handleDragEnd = () => setIsDragOver(false);
+    document.addEventListener('dragend', handleDragEnd);
+    document.addEventListener('drop', handleDragEnd);
+    return () => {
+      document.removeEventListener('dragend', handleDragEnd);
+      document.removeEventListener('drop', handleDragEnd);
+    };
+  }, []);
 
   const handleRowClick = () => {
     // Select the folder
@@ -115,6 +140,53 @@ function FolderTreeNode({
     }
   };
 
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    try {
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) {
+        console.log('Dropping files into folder:', node.path, files);
+
+        // Import the upload function dynamically
+        const { uploadDocumentsToFolder } = await import('@/app/actions/document');
+
+        const result = await uploadDocumentsToFolder(projectId, node.path, files);
+
+        if (result.success) {
+          console.log('Upload successful:', result.data);
+          // Trigger Next.js router refresh to revalidate server data
+          router.refresh();
+        } else {
+          console.error('Upload failed:', result.error);
+          alert(`Upload failed: ${result.error?.message || 'Unknown error'}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error handling drop:', error);
+      alert('An error occurred during upload');
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    // Only set isDragOver to false if mouse actually left the container bounds
+    if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
+      setIsDragOver(false);
+    }
+  };
+
   return (
     <div>
       <div
@@ -122,10 +194,14 @@ function FolderTreeNode({
           'flex items-center gap-2 py-2 px-3 rounded-lg cursor-pointer transition-colors mx-2',
           'hover:bg-gray-800/50',
           isSelected && 'bg-gray-800 text-gray-100',
-          !isSelected && 'text-gray-300'
+          !isSelected && 'text-gray-300',
+          isDragOver && 'bg-blue-600/30 border-2 border-blue-400 border-dashed'
         )}
         style={{ paddingLeft: `${baseIndent + level * 16}px` }}
         onClick={handleRowClick}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
       >
         {/* Expand/collapse chevron */}
         {hasChildren ? (
@@ -162,6 +238,7 @@ function FolderTreeNode({
               level={level + 1}
               selectedPath={selectedPath}
               baseIndent={baseIndent}
+              isHydrated={isHydrated}
             />
           ))}
         </div>

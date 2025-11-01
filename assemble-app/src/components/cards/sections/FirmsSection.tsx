@@ -90,10 +90,17 @@ function FirmColumn({
       timer = setTimeout(async () => {
         setSaveStatus('saving');
         try {
-          await onUpdate(firm.id, values);
-          setSaveStatus('saved');
-          setTimeout(() => setSaveStatus('idle'), 2000);
+          const result = await onUpdate(firm.id, values);
+          if (result && result.success) {
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus('idle'), 2000);
+          } else {
+            console.error('Failed to update firm:', result?.error);
+            setSaveStatus('error');
+            setTimeout(() => setSaveStatus('idle'), 3000);
+          }
         } catch (error) {
+          console.error('Error updating firm:', error);
           setSaveStatus('error');
           setTimeout(() => setSaveStatus('idle'), 3000);
         }
@@ -541,6 +548,7 @@ export function FirmsSection({ projectId, disciplineId }: FirmsSectionProps) {
         )
       );
     }
+    return result;
   };
 
   const handleDeleteFirm = async (firmId: string) => {

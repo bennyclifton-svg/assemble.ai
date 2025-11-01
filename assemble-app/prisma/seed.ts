@@ -61,7 +61,17 @@ async function main() {
     },
   });
 
-  console.log(`Created ${3} sections for Plan Card`);
+  const riskSection = await prisma.section.create({
+    data: {
+      cardId: planCard.id,
+      name: 'Risk',
+      order: 3,
+      createdBy: 'test-user-123',
+      updatedBy: 'test-user-123',
+    },
+  });
+
+  console.log(`Created ${4} sections for Plan Card`);
 
   // Create sample items in Details section
   await prisma.item.create({
@@ -139,6 +149,93 @@ async function main() {
 
   console.log(`Created ${2} items in Objectives section`);
 
+  // Create sample items in Staging section
+  await prisma.item.create({
+    data: {
+      sectionId: stagingSection.id,
+      order: 0,
+      type: 'text',
+      data: {
+        name: 'Design Development Phase - 6 months',
+      },
+      createdBy: 'test-user-123',
+      updatedBy: 'test-user-123',
+    },
+  });
+
+  await prisma.item.create({
+    data: {
+      sectionId: stagingSection.id,
+      order: 1,
+      type: 'text',
+      data: {
+        name: 'Construction Documentation - 4 months',
+      },
+      createdBy: 'test-user-123',
+      updatedBy: 'test-user-123',
+    },
+  });
+
+  await prisma.item.create({
+    data: {
+      sectionId: stagingSection.id,
+      order: 2,
+      type: 'text',
+      data: {
+        name: 'Tender and Contract - 2 months',
+      },
+      createdBy: 'test-user-123',
+      updatedBy: 'test-user-123',
+    },
+  });
+
+  console.log(`Created ${3} items in Staging section`);
+
+  // Create sample items in Risk section
+  await prisma.item.create({
+    data: {
+      sectionId: riskSection.id,
+      order: 0,
+      type: 'text',
+      data: {
+        label: 'Heritage Constraints',
+        value: 'Building is heritage-listed, requiring council approval for facade modifications',
+      },
+      createdBy: 'test-user-123',
+      updatedBy: 'test-user-123',
+    },
+  });
+
+  await prisma.item.create({
+    data: {
+      sectionId: riskSection.id,
+      order: 1,
+      type: 'text',
+      data: {
+        label: 'Site Access',
+        value: 'Limited site access during business hours due to adjacent commercial properties',
+      },
+      createdBy: 'test-user-123',
+      updatedBy: 'test-user-123',
+    },
+  });
+
+  await prisma.item.create({
+    data: {
+      sectionId: riskSection.id,
+      order: 2,
+      type: 'text',
+      data: {
+        label: 'Budget Constraints',
+        value: 'Fixed budget with no contingency - requires careful scope management',
+      },
+      createdBy: 'test-user-123',
+      updatedBy: 'test-user-123',
+    },
+  });
+
+  console.log(`Created ${3} items in Risk section`);
+
   // Create a Consultant Card
   const consultantCard = await prisma.card.create({
     data: {
@@ -150,6 +247,115 @@ async function main() {
   });
 
   console.log(`Created Consultant Card (${consultantCard.id})`);
+
+  // Create sections for Consultant Card
+  const scopeSection = await prisma.section.create({
+    data: {
+      cardId: consultantCard.id,
+      name: 'Scope',
+      order: 0,
+      createdBy: 'test-user-123',
+      updatedBy: 'test-user-123',
+    },
+  });
+
+  const deliverablesSection = await prisma.section.create({
+    data: {
+      cardId: consultantCard.id,
+      name: 'Deliverables',
+      order: 1,
+      createdBy: 'test-user-123',
+      updatedBy: 'test-user-123',
+    },
+  });
+
+  const feeStructureSection = await prisma.section.create({
+    data: {
+      cardId: consultantCard.id,
+      name: 'Fee Structure',
+      order: 2,
+      createdBy: 'test-user-123',
+      updatedBy: 'test-user-123',
+    },
+  });
+
+  const tenderDocumentSection = await prisma.section.create({
+    data: {
+      cardId: consultantCard.id,
+      name: 'Tender Document',
+      order: 3,
+      createdBy: 'test-user-123',
+      updatedBy: 'test-user-123',
+    },
+  });
+
+  const tenderReleaseSection = await prisma.section.create({
+    data: {
+      cardId: consultantCard.id,
+      name: 'Tender Release and Submission',
+      order: 4,
+      createdBy: 'test-user-123',
+      updatedBy: 'test-user-123',
+    },
+  });
+
+  console.log(`Created ${5} sections for Consultant Card`);
+
+  // Create DisciplineData for the consultant card
+  const disciplineData = await prisma.disciplineData.upsert({
+    where: {
+      projectId_disciplineId: {
+        projectId: project.id,
+        disciplineId: 'architect',
+      },
+    },
+    update: {},
+    create: {
+      projectId: project.id,
+      disciplineId: 'architect',
+      createdBy: 'test-user-123',
+      updatedBy: 'test-user-123',
+    },
+  });
+
+  console.log(`Created DisciplineData for architect (${disciplineData.id})`);
+
+  // Create sample firms linked to the consultant card
+  const firm1 = await prisma.firm.create({
+    data: {
+      projectId: project.id,
+      consultantCardId: consultantCard.id,
+      entity: 'ABC Architects',
+      abn: '12 345 678 901',
+      address: '456 Design Street, Sydney NSW 2000',
+      contact: 'John Smith',
+      email: 'john.smith@abcarchitects.com.au',
+      mobile: '0412 345 678',
+      shortListed: true,
+      displayOrder: 0,
+      createdBy: 'test-user-123',
+      updatedBy: 'test-user-123',
+    },
+  });
+
+  const firm2 = await prisma.firm.create({
+    data: {
+      projectId: project.id,
+      consultantCardId: consultantCard.id,
+      entity: 'XYZ Design Group',
+      abn: '98 765 432 109',
+      address: '789 Innovation Ave, Melbourne VIC 3000',
+      contact: 'Sarah Johnson',
+      email: 'sarah.johnson@xyzdesign.com.au',
+      mobile: '0423 456 789',
+      shortListed: true,
+      displayOrder: 1,
+      createdBy: 'test-user-123',
+      updatedBy: 'test-user-123',
+    },
+  });
+
+  console.log(`Created ${2} firms linked to Consultant Card`);
 
   console.log('Seed completed successfully!');
 }

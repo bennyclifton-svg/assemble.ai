@@ -1,0 +1,272 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>5</storyId>
+    <title>Tender Evaluation - Price Setup</title>
+    <status>Draft</status>
+    <generatedAt>2025-11-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/4-5-tender-evaluation-price-setup.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>price evaluation tables for comparing submissions</iWant>
+    <soThat>I can analyze pricing systematically</soThat>
+    <tasks>
+      <task>Create Tender Evaluation/Price section in Consultant Card</task>
+      <task>Implement side-by-side firm columns for short-listed firms only</task>
+      <task>Initialize Table 1 - Original with line item structure from Fee Structure section (descriptions, categories, hierarchy only - NO price amounts)</task>
+      <task>Add 'Retrieve from Procure/Tender Schedules Price' icon next to section header</task>
+      <task>Implement retrieve action to verify tender submission documents exist before populating Table 1 prices</task>
+      <task>Populate Table 1 price amounts from tender submission data when retrieve action is triggered</task>
+      <task>Initialize Table 2 - Adds and Subs with 3 default placeholder items (blank amounts)</task>
+      <task>Implement add/delete line items in both tables</task>
+      <task>Support hierarchical structure with categories and sub-items</task>
+      <task>Enable inline editing of item descriptions and amounts</task>
+      <task>Calculate sub-totals for categories within each table</task>
+      <task>Calculate table-level sub-totals for Table 1 and Table 2</task>
+      <task>Calculate Grand Total across all tables</task>
+      <task>Auto-recalculate on any price change</task>
+      <task>Replicate identical structure for Contractor Card</task>
+      <task>Test with multiple firm configurations and hierarchical structures</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">Display firms side-by-side (those marked as short-listed in Consultant/Contractor Card Firms section)</criterion>
+    <criterion id="2">Table 1 - Original line item structure defaults to Fee Structure section contents on load (descriptions only, amounts blank/zero)</criterion>
+    <criterion id="2a">Table 1 price amounts populate only when user clicks "Retrieve from Procure/Tender Schedules Price" icon</criterion>
+    <criterion id="2b">Retrieve action verifies that corresponding price schedule data exists in uploaded tender submission documents before populating</criterion>
+    <criterion id="3">Table 2 - Adds and Subs initializes with 3 default placeholder items (blank/zero amounts)</criterion>
+    <criterion id="4">Add/delete line items in both tables</criterion>
+    <criterion id="5">Hierarchical structure support (categories and sub-items with sub-totals)</criterion>
+    <criterion id="6">Sub-total calculations for each category and table automatically calculated</criterion>
+    <criterion id="7">Grand total calculation across all tables automatically calculated</criterion>
+    <criterion id="8">Auto-recalculation on any price change in any cell</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>Tender Evaluation - Price (FR012_TE1-FR012_TE12)</section>
+        <snippet>Provides requirements for side-by-side firm display, Table 1 Original with retrieval from tender schedules, Table 2 Adds/Subs, sub-totals, grand total calculation, and item management</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/3-2-firms-management-layout-and-controls.md</path>
+        <title>Firms Management Layout and Controls</title>
+        <section>Side-by-side firm columns pattern</section>
+        <snippet>Establishes the pattern for displaying multiple firms in parallel columns with consistent controls</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/3-5-fee-structure-management.md</path>
+        <title>Fee Structure Management</title>
+        <section>Fee Structure data model and hierarchical structure</section>
+        <snippet>Demonstrates hierarchical pricing data structure with categories, line items, calculations and inline editing patterns</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/1-2-data-cards-three-tier-hierarchy.md</path>
+        <title>Data Cards Three-Tier Hierarchy</title>
+        <section>Card/Section/Item structure</section>
+        <snippet>Defines the architectural pattern for organizing data in three hierarchical levels</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document</title>
+        <section>Components and Data Model</section>
+        <snippet>Outlines React component structure, Zustand state management, and Prisma data model patterns</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>assemble-app/src/components/cards/sections/TenderEvaluationSection.tsx</path>
+        <kind>component</kind>
+        <symbol>TenderEvaluationSection</symbol>
+        <lines>1-18</lines>
+        <reason>Existing placeholder component that needs to be replaced with full price evaluation implementation</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/components/cards/sections/FeeStructureSection.tsx</path>
+        <kind>component</kind>
+        <symbol>FeeStructureSection</symbol>
+        <lines>1-400</lines>
+        <reason>Reference for Fee Structure data model and hierarchical structure patterns (note: uses different grid library, but data model is relevant)</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/components/cards/sections/FirmsSection.tsx</path>
+        <kind>component</kind>
+        <symbol>FirmsSection</symbol>
+        <reason>Reference for side-by-side firm display pattern and short-listing toggle</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/stores/feeStructureStore.ts</path>
+        <kind>store</kind>
+        <symbol>useFeeStructureStore</symbol>
+        <reason>Zustand store pattern reference for managing evaluation table state</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/app/actions/tender.ts</path>
+        <kind>server-actions</kind>
+        <reason>Server actions file where tender evaluation CRUD operations should be added</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <reason>Database schema that needs TenderEvaluation, TenderEvaluationTable, and EvaluationLineItem models</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/components/cards/ConsultantCard.tsx</path>
+        <kind>component</kind>
+        <symbol>ConsultantCard</symbol>
+        <reason>Parent component where TenderEvaluationSection is rendered</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/lib/feeStructureUtils.ts</path>
+        <kind>utils</kind>
+        <reason>Utility functions for transforming and calculating fee structures that can be adapted</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/app/actions/feeStructure.ts</path>
+        <kind>server-actions</kind>
+        <symbol>getFeeStructure</symbol>
+        <reason>Server action to retrieve Fee Structure data for initializing Table 1 line item structure</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/types/feeStructure.ts</path>
+        <kind>types</kind>
+        <symbol>FeeStructureItem</symbol>
+        <reason>Type definitions for fee structure items that Table 1 will mirror</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="handsontable" version="^13.1.0" reason="REQUIRED: Enterprise spreadsheet library for price evaluation tables with hierarchical data support" />
+        <package name="@handsontable/react" version="^13.1.0" reason="REQUIRED: React wrapper for Handsontable" />
+        <package name="@prisma/client" version="^6.0.1" reason="Already installed, database ORM" />
+        <package name="zustand" version="^5.0.8" reason="Already installed, state management" />
+        <package name="lucide-react" version="^0.548.0" reason="Already installed, icons library" />
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>MANDATORY: Must use Handsontable library for Excel-like functionality and hierarchical data support</constraint>
+    <constraint>Follow existing Card/Section/Item three-tier hierarchy pattern</constraint>
+    <constraint>Use Zustand store for managing evaluation table state</constraint>
+    <constraint>All components must use 'use client' directive for client-side rendering</constraint>
+    <constraint>Implement auto-calculation using Handsontable's HyperFormula engine or React-side calculations</constraint>
+    <constraint>Support hierarchical structure with categories and sub-items using Handsontable's nested rows</constraint>
+    <constraint>Enable inline editing of descriptions and amounts using Handsontable's built-in editing</constraint>
+    <constraint>Display only short-listed firms side-by-side using dynamic Handsontable columns</constraint>
+    <constraint>Persist data changes to database via server actions</constraint>
+  </constraints>
+
+  <criticalImplementationDetails>
+    <detail id="table1-initialization" priority="CRITICAL">
+      <title>Table 1 (Original Fee) Data Loading Workflow</title>
+      <workflow>
+        <step n="1">On component load, Table 1 line item STRUCTURE defaults to contents from 'Fee Structure' section (descriptions, categories, hierarchy only)</step>
+        <step n="2">All price amounts in Table 1 are initially BLANK or ZERO - no price data is loaded automatically</step>
+        <step n="3">User clicks "Retrieve from Procure/Tender Schedules Price" icon (displayed next to section header)</step>
+        <step n="4">System verifies that corresponding price schedule data exists in uploaded tender submission documents</step>
+        <step n="5">If data available: Populate price amounts into Table 1 cells matching the line item structure</step>
+        <step n="6">If data not available: Show error message "No tender submission data found. Please upload tender documents first."</step>
+      </workflow>
+      <rationale>Table 1 structure mirrors Fee Structure section, but price data comes from uploaded tender documents, not Fee Structure. This separation allows users to see the expected line items before retrieving actual submitted prices.</rationale>
+    </detail>
+
+    <detail id="table2-initialization" priority="HIGH">
+      <title>Table 2 (Adds/Subs) Initialization</title>
+      <workflow>
+        <step n="1">Table 2 initializes with 3 default placeholder line items</step>
+        <step n="2">Placeholder items have generic descriptions like "Additional Item 1", "Additional Item 2", "Additional Item 3"</step>
+        <step n="3">All amounts are blank/zero initially</step>
+        <step n="4">User can immediately add, delete, or edit these items</step>
+      </workflow>
+    </detail>
+
+    <detail id="data-retrieval-prerequisite" priority="CRITICAL">
+      <title>Retrieve Action Data Prerequisite</title>
+      <requirement>The "Retrieve from Procure/Tender Schedules Price" action MUST verify that price schedule data is available from an uploaded tender submission document before attempting to populate Table 1</requirement>
+      <implementation>
+        <check>Query database for tender submission documents associated with the consultant/contractor</check>
+        <check>Verify at least one document contains price schedule data (detected via AI or document metadata)</check>
+        <check>If no documents found: Display user-friendly error and disable retrieve action</check>
+        <check>If documents found but no price data: Prompt user to process documents or upload correct submission</check>
+      </implementation>
+    </detail>
+
+    <detail id="handsontable-mandatory" priority="CRITICAL">
+      <title>Technology Requirement: Handsontable</title>
+      <mandate>Implementation MUST use Handsontable library for Excel-like functionality and hierarchical data</mandate>
+      <reasoning>
+        <reason>Handsontable provides native support for nested rows (hierarchical categories/sub-items)</reason>
+        <reason>Built-in formula engine (HyperFormula) for automatic sub-total and grand total calculations</reason>
+        <reason>Excel-like inline editing and copy/paste functionality out-of-box</reason>
+        <reason>Side-by-side firm columns can be dynamically generated based on short-listed firms</reason>
+      </reasoning>
+      <alternative>Other grid libraries were considered but Handsontable is the only library that provides native hierarchical data structure (nested rows) combined with formula engine support and Excel-like UX. No alternative libraries should be used.</alternative>
+    </detail>
+
+    <detail id="calculation-requirements" priority="HIGH">
+      <title>Automatic Calculation Requirements</title>
+      <calculations>
+        <calc>Category sub-totals: Sum of all line items within a category</calc>
+        <calc>Table sub-totals: Sum of all categories within Table 1 and Table 2 separately</calc>
+        <calc>Grand Total: Sum of Table 1 sub-total + Table 2 sub-total (+ any additional tables)</calc>
+        <calc>Auto-recalculation trigger: Any price change in any cell must immediately recalculate all affected totals</calc>
+      </calculations>
+      <implementation>Use Handsontable's HyperFormula engine OR React-side calculations via useMemo/useEffect hooks</implementation>
+    </detail>
+  </criticalImplementationDetails>
+
+  <interfaces>
+    <interface>
+      <name>TenderEvaluationSection Props</name>
+      <kind>React Component Interface</kind>
+      <signature>{ projectId: string, disciplineId: string }</signature>
+      <path>assemble-app/src/components/cards/sections/TenderEvaluationSection.tsx</path>
+    </interface>
+    <interface>
+      <name>Server Actions for Tender Evaluation</name>
+      <kind>Server Actions</kind>
+      <signature>getTenderEvaluation(), saveTenderEvaluation(), retrieveFromTenderSchedules()</signature>
+      <path>assemble-app/src/app/actions/tender.ts</path>
+    </interface>
+    <interface>
+      <name>Zustand Store Interface</name>
+      <kind>State Management</kind>
+      <signature>useTenderEvaluationStore: items, setItems, updateItem, addItem, deleteItem</signature>
+      <path>assemble-app/src/stores/tenderEvaluationStore.ts (to be created)</path>
+    </interface>
+    <interface>
+      <name>Prisma Models</name>
+      <kind>Database Schema</kind>
+      <signature>TenderEvaluation, TenderEvaluationTable, EvaluationLineItem</signature>
+      <path>assemble-app/prisma/schema.prisma</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Use Vitest for unit tests with @testing-library/react for component testing. Follow existing test patterns in __tests__ directories. Use Playwright for E2E tests. Test calculations, data persistence, and user interactions.</standards>
+    <locations>assemble-app/src/components/cards/sections/__tests__/, assemble-app/src/app/actions/__tests__/, assemble-app/src/stores/__tests__/</locations>
+    <ideas>
+      <test ac="1">Test side-by-side display renders only short-listed firms</test>
+      <test ac="2">Test Table 1 loads with line item structure from Fee Structure section (descriptions only, amounts blank/zero)</test>
+      <test ac="2a">Test retrieve icon click populates price amounts in Table 1</test>
+      <test ac="2b">Test retrieve action verifies tender submission documents exist before populating</test>
+      <test ac="2b">Test error message displayed when no tender submission data found</test>
+      <test ac="3">Test Table 2 initializes with 3 default placeholder items</test>
+      <test ac="4">Test add/delete line items updates data correctly in both tables</test>
+      <test ac="5">Test hierarchical structure with nested categories and proper indentation</test>
+      <test ac="6">Test sub-total calculations for each category and table</test>
+      <test ac="7">Test grand total calculation across all tables</test>
+      <test ac="8">Test auto-recalculation triggers on any price change</test>
+      <test ac="all">Test data persistence across page reloads</test>
+      <test ac="all">Test Excel copy/paste functionality with Handsontable</test>
+      <test ac="all">Test workflow: load structure → retrieve prices → edit manually → verify calculations</test>
+    </ideas>
+  </tests>
+</story-context>

@@ -91,6 +91,9 @@ function SectionCheckbox({ section, checked, onChange, showItems = false }: Sect
  * - AC3: Plan Card section selection with checkboxes
  * - AC4: Consultant Card section selection (37 disciplines)
  * - AC5: Contractor Card section selection (20 trades)
+ * - Document Schedule selection
+ *
+ * Layout: Vertical stacking with 2-column grid for checkboxes within each section
  */
 export function CardSectionSelector({ projectId, cards, className }: CardSectionSelectorProps) {
   const [activeDiscipline, setActiveDiscipline] = useState<string | null>(null);
@@ -98,7 +101,8 @@ export function CardSectionSelector({ projectId, cards, className }: CardSection
 
   const store = useSelectionStore();
   const selectedSections = store.getSelectedSections();
-  const { toggleSection } = store;
+  const { toggleSection, getDocumentScheduleSelected, toggleDocumentSchedule } = store;
+  const documentScheduleSelected = getDocumentScheduleSelected();
 
   const planCard = cards.find((c) => c.type === 'PLAN');
   const consultantCards = cards.filter((c) => c.type === 'CONSULTANT');
@@ -121,15 +125,17 @@ export function CardSectionSelector({ projectId, cards, className }: CardSection
         <div>
           <h3 className="font-medium text-gray-900 mb-3">Plan Card Sections</h3>
           <div className="border rounded-lg p-4 bg-white">
-            {planCard.sections.map((section) => (
-              <SectionCheckbox
-                key={section.id}
-                section={section}
-                checked={selectedSections.plan.has(section.id)}
-                onChange={() => toggleSection('plan', '', section.id)}
-                showItems={true}
-              />
-            ))}
+            <div className="grid grid-cols-2 gap-x-6">
+              {planCard.sections.map((section) => (
+                <SectionCheckbox
+                  key={section.id}
+                  section={section}
+                  checked={selectedSections.plan.has(section.id)}
+                  onChange={() => toggleSection('plan', '', section.id)}
+                  showItems={true}
+                />
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -180,15 +186,17 @@ export function CardSectionSelector({ projectId, cards, className }: CardSection
                 {card.sections.length === 0 ? (
                   <p className="text-sm text-gray-500">No sections available for this discipline</p>
                 ) : (
-                  card.sections.map((section) => (
-                    <SectionCheckbox
-                      key={section.id}
-                      section={section}
-                      checked={selectedSections.consultant.get(discipline)?.has(section.id) || false}
-                      onChange={() => toggleSection('consultant', discipline, section.id)}
-                      showItems={true}
-                    />
-                  ))
+                  <div className="grid grid-cols-2 gap-x-6">
+                    {card.sections.map((section) => (
+                      <SectionCheckbox
+                        key={section.id}
+                        section={section}
+                        checked={selectedSections.consultant.get(discipline)?.has(section.id) || false}
+                        onChange={() => toggleSection('consultant', discipline, section.id)}
+                        showItems={true}
+                      />
+                    ))}
+                  </div>
                 )}
               </div>
             );
@@ -242,21 +250,43 @@ export function CardSectionSelector({ projectId, cards, className }: CardSection
                 {card.sections.length === 0 ? (
                   <p className="text-sm text-gray-500">No sections available for this trade</p>
                 ) : (
-                  card.sections.map((section) => (
-                    <SectionCheckbox
-                      key={section.id}
-                      section={section}
-                      checked={selectedSections.contractor.get(trade)?.has(section.id) || false}
-                      onChange={() => toggleSection('contractor', trade, section.id)}
-                      showItems={true}
-                    />
-                  ))
+                  <div className="grid grid-cols-2 gap-x-6">
+                    {card.sections.map((section) => (
+                      <SectionCheckbox
+                        key={section.id}
+                        section={section}
+                        checked={selectedSections.contractor.get(trade)?.has(section.id) || false}
+                        onChange={() => toggleSection('contractor', trade, section.id)}
+                        showItems={true}
+                      />
+                    ))}
+                  </div>
                 )}
               </div>
             );
           })}
         </div>
       )}
+
+      {/* Document Schedule Selection */}
+      <div>
+        <h3 className="font-medium text-gray-900 mb-3">Document Schedule</h3>
+        <div className="border rounded-lg p-4 bg-white">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="document-schedule"
+              checked={documentScheduleSelected}
+              onCheckedChange={() => toggleDocumentSchedule()}
+            />
+            <label htmlFor="document-schedule" className="flex-1 cursor-pointer text-sm font-medium">
+              Include Document Schedule in Tender Package
+            </label>
+          </div>
+          <p className="text-xs text-gray-500 mt-2 ml-6">
+            The document schedule will list all selected documents in a structured format
+          </p>
+        </div>
+      </div>
 
       {/* Empty state */}
       {!planCard && consultantCards.length === 0 && contractorCards.length === 0 && (
