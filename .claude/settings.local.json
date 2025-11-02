@@ -113,7 +113,10 @@
       "SlashCommand(/bmad:bmm:agents:tea)",
       "Bash(if exist .next rmdir /s /q .next)",
       "Bash(if exist node_modules.cache rmdir /s /q node_modules.cache)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npx prisma db seed:*)",
+      "Bash(if [ ! -d \"D:\\assemble.ai\\assemble-app\\src\\components\\project\" ])",
+      "Bash(then mkdir -p \"D:\\assemble.ai\\assemble-app\\src\\components\\project\")"
     ],
     "deny": [],
     "ask": []

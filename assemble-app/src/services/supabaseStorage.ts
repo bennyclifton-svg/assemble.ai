@@ -47,17 +47,20 @@ export async function uploadToSupabase(
 
 /**
  * Generate a signed URL for secure file download
+ * Returns null if the file doesn't exist instead of throwing
  */
 export async function getSignedDownloadUrl(
   key: string,
   expiresIn: number = 3600
-): Promise<string> {
+): Promise<string | null> {
   const { data, error } = await supabase.storage
     .from(BUCKET_NAME)
     .createSignedUrl(key, expiresIn);
 
   if (error) {
-    throw new Error(`Failed to generate signed URL: ${error.message}`);
+    // Log warning for missing files instead of crashing
+    console.warn(`Failed to generate signed URL for key "${key}": ${error.message}`);
+    return null;
   }
 
   return data.signedUrl;

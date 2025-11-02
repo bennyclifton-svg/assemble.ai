@@ -2,6 +2,25 @@
 
 Status: Draft
 
+## ⚠️ CRITICAL DEPENDENCY
+
+**This story builds on Story 4.5 Handsontable implementation.**
+
+**Prerequisites:**
+- Story 4.5 completed with Handsontable installed and configured
+- PriceEvaluationTable component using Handsontable
+- All AI extraction features integrate with Handsontable's API
+
+**Handsontable Integration Points:**
+- Use `hotInstance.setDataAtCell()` to populate extracted prices
+- Use `hotInstance.setCellMeta()` for AI metadata (confidence, timestamps)
+- Custom cell renderer for visual AI indicators
+- `afterChange` callback to detect manual overrides
+
+**Do NOT implement without Handsontable** - the entire price extraction workflow depends on Handsontable's data model.
+
+---
+
 ## Story
 
 As a user,

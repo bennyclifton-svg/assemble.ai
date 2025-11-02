@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
 import { DocumentFolderTree } from '@/components/workspace/DocumentFolderTree';
+import { ProjectSwitcher } from '@/components/workspace/ProjectSwitcher';
 
 interface NavItem {
   type: CardType;
@@ -114,6 +115,11 @@ export function NavigationSidebar({ projectId, documents = [] }: NavigationSideb
         ${collapsedNav ? 'w-16' : 'w-60'}
       `}
     >
+      {/* Project Switcher */}
+      {projectId && (
+        <ProjectSwitcher projectId={projectId} collapsed={collapsedNav} />
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-800 flex-shrink-0">
         {!collapsedNav && (

@@ -8,7 +8,6 @@ import { ScopeSection } from './sections/ScopeSection';
 import { DeliverablesSection } from './sections/DeliverablesSection';
 import { FeeStructureSection } from './sections/FeeStructureSection';
 import { TenderDocumentSection } from './sections/TenderDocumentSection';
-import { TenderReleaseSection } from './sections/TenderReleaseSection';
 import { TenderPackSection } from './sections/TenderPackSection';
 import { RFISection } from './sections/RfiSection';
 import { TenderEvaluationSection } from './sections/TenderEvaluationSection';
@@ -21,7 +20,6 @@ import {
   Target,
   DollarSign,
   File,
-  Send,
   Package,
   MessageCircleQuestion,
   BarChart3,
@@ -39,11 +37,10 @@ const consultantCardSections = [
   { id: 'deliverables', name: 'Deliverables', icon: Target, order: 3 },
   { id: 'fee-structure', name: 'Fee Structure', icon: DollarSign, order: 4 },
   { id: 'tender-document', name: 'Tender Document', icon: File, order: 5 },
-  { id: 'tender-release', name: 'Tender Release and Submission', icon: Send, order: 6 },
-  { id: 'tender-pack', name: 'Tender Pack', icon: Package, order: 7 },
-  { id: 'rfi-addendum', name: 'Tender RFI and Addendum', icon: MessageCircleQuestion, order: 8 },
-  { id: 'tender-evaluation', name: 'Tender Evaluation', icon: BarChart3, order: 9 },
-  { id: 'recommendation-report', name: 'Tender Recommendation Report', icon: ClipboardCheck, order: 10 },
+  { id: 'tender-pack', name: 'Tender Pack', icon: Package, order: 6 },
+  { id: 'rfi-addendum', name: 'Release, RFI, Addendum, Submission', icon: MessageCircleQuestion, order: 7 },
+  { id: 'tender-evaluation', name: 'Tender Evaluation', icon: BarChart3, order: 8 },
+  { id: 'recommendation-report', name: 'Tender Recommendation Report', icon: ClipboardCheck, order: 9 },
 ];
 
 export function ConsultantCard({ projectId, onClose }: ConsultantCardProps) {
@@ -92,8 +89,6 @@ export function ConsultantCard({ projectId, onClose }: ConsultantCardProps) {
         return <FeeStructureSection projectId={projectId} disciplineId={activeTab} />;
       case 'tender-document':
         return <TenderDocumentSection projectId={projectId} disciplineId={activeTab} />;
-      case 'tender-release':
-        return <TenderReleaseSection projectId={projectId} disciplineId={activeTab} />;
       case 'tender-pack':
         return <TenderPackSection projectId={projectId} disciplineId={activeTab} />;
       case 'rfi-addendum':

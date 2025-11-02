@@ -66,9 +66,10 @@ development_status:
   3-3-drag-and-drop-firm-details: done
   3-4-scope-and-deliverables-with-ai-generation: done
   3-5-fee-structure-management: drafted
-  3-6-rfi-and-addendum-management: drafted
+  3-6-rfi-and-addendum-management: done
   3-7-contractor-card-implementation: drafted
-  3-8-tender-release-and-submission-tracking: drafted
+  3-8-tender-release-and-submission-tracking: not-used
+  3-9-release-rfi-addendum-submission: drafted
   epic-3-retrospective: optional
 
   # Epic 4: Tender Package Generation & Evaluation
@@ -77,7 +78,7 @@ development_status:
   4-2-ai-tender-package-generation: ready-for-dev
   4-3-tender-package-review-and-edit: ready-for-dev
   4-4-tender-package-finalization-and-lock: ready-for-dev
-  4-5-tender-evaluation-price-setup: drafted
+  4-5-tender-evaluation-price-setup: review
   4-6-ai-price-extraction-from-submissions: drafted
   4-7-price-evaluation-advanced-features: drafted
   4-8-non-price-evaluation: backlog

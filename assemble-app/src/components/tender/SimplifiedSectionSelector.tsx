@@ -68,8 +68,23 @@ export function SimplifiedSectionSelector({
   console.log('✨ Selected Consultant Card:', consultantCard);
   console.log('🆔 Current Discipline:', currentDiscipline);
 
-  // Get ALL Plan sections (sorted by order) - NO FILTERING
-  const planSections = planCard?.sections.sort((a, b) => a.order - b.order) || [];
+  // Get ALL Plan sections (sorted by order) - with deduplication by name
+  const planSectionsRaw = planCard?.sections.sort((a, b) => a.order - b.order) || [];
+
+  // IMPORTANT: Case-insensitive deduplication required to prevent duplicates
+  // The database may contain sections with different casing (e.g., 'Details' vs 'details')
+  // due to seed data using title case while init functions use lowercase.
+  // This deduplication keeps the first occurrence of each unique section name.
+  // DO NOT REMOVE: This prevents the duplication bug from reoccurring.
+  const seenNames = new Set<string>();
+  const planSections = planSectionsRaw.filter((section) => {
+    const normalizedName = section.name.toLowerCase();
+    if (seenNames.has(normalizedName)) {
+      return false;
+    }
+    seenNames.add(normalizedName);
+    return true;
+  });
 
   console.log('📊 Plan Card Sections (all sections shown):', planSections);
 
@@ -123,27 +138,29 @@ export function SimplifiedSectionSelector({
               <p className="text-sm text-gray-500">No Consultant sections available</p>
             ) : (
               <>
-                {consultantSections.map((section) => {
-                  const isSelected =
-                    selectedSections.consultant.get(currentDiscipline)?.has(section.id) || false;
-                  return (
-                    <div key={section.id} className="flex items-center gap-3">
-                      <Checkbox
-                        id={`consultant-${section.id}`}
-                        checked={isSelected}
-                        onCheckedChange={() =>
-                          toggleSection('consultant', currentDiscipline, section.id)
-                        }
-                      />
-                      <label
-                        htmlFor={`consultant-${section.id}`}
-                        className="text-sm font-medium text-gray-900 cursor-pointer flex-1"
-                      >
-                        {getDisplayName(section.name)}
-                      </label>
-                    </div>
-                  );
-                })}
+                {consultantSections
+                  .filter((section) => section.name !== 'Tender Document') // Hide Tender Document (it's for upload, not content)
+                  .map((section) => {
+                    const isSelected =
+                      selectedSections.consultant.get(currentDiscipline)?.has(section.id) || false;
+                    return (
+                      <div key={section.id} className="flex items-center gap-3">
+                        <Checkbox
+                          id={`consultant-${section.id}`}
+                          checked={isSelected}
+                          onCheckedChange={() =>
+                            toggleSection('consultant', currentDiscipline, section.id)
+                          }
+                        />
+                        <label
+                          htmlFor={`consultant-${section.id}`}
+                          className="text-sm font-medium text-gray-900 cursor-pointer flex-1"
+                        >
+                          {getDisplayName(section.name)}
+                        </label>
+                      </div>
+                    );
+                  })}
 
                 {/* Document Schedule at bottom of Column 2 */}
                 <div className="pt-3 mt-3 border-t border-gray-200">

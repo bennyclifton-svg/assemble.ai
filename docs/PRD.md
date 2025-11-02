@@ -53,10 +53,14 @@ Current tools (shared drives, MS Office, Procore, Aconex) provide storage but la
 - FR010: System shall support multi-select functionality using Shift+click (range selection) and Ctrl+click (individual selection) for bulk actions on all items
 
 **Consultant & Contractor Cards:**
-- FR011: System shall provide Consultant Card for managing consultant information and briefs with predefined sections (Firms, Scope, Deliverables, Fee Structure, Tender Document, Tender Release and Submission, Tender Pack, Tender RFI and Addendum, Tender Evaluation, Tender Recommendation Report)
-- FR011a: System shall provide Tender RFI and Addendum section in Consultant Card with two tables: RFI table (RFI No, Detail, Date Received, Response, Response Date) and Addendum table (Addendum No, Detail (which may include additional document), Date Released)
-- FR012: System shall provide Contractor Card for managing contractor information and scopes with predefined sections (Firms, Scope, Deliverables, Fee Structure, Tender Document, Tender Release and Submission, Tender Pack, Tender RFI and Addendum, Tender Evaluation, Tender Recommendation Report)
-- FR012_RFI: System shall provide Tender RFI and Addendum section in Contractor Card with two tables: RFI table (RFI No, Detail, Date Received, Response, Response Date) and Addendum table (Addendum No, Detail (which may include additional document), Date Released)
+- FR011: System shall provide Consultant Card for managing consultant information and briefs with predefined sections in order: (1) Firms, (2) Scope, (3) Deliverables, (4) Fee Structure, (5) Tender Pack, (6) Release/RFI/Addendum/Submission, (7) Tender Evaluation, (8) Tender Recommendation Report
+- FR011a: System shall provide "Release, RFI, Addendum, Submission" section in Consultant Card with four components per firm:
+  - Release: Release Date, Tender Package upload (auto-files to Documents/Consultant/[Firm Name]/TenderPackage-[date].pdf)
+  - RFI: RFI table with columns (RFI No, Detail, Date Received, Document), toggle states (ghosted/green for received), drag-drop document upload
+  - Addendum: Addendum table with columns (Addendum No, Detail, Date Released, Document), toggle states (ghosted/green for released), selective issuance per firm
+  - Submission: Submission Date, Submission upload (auto-files to Documents/Consultant/[discipline]/filename.pdf), support for multiple submissions per firm
+- FR012: System shall provide Contractor Card for managing contractor information and scopes with predefined sections in order: (1) Firms, (2) Scope, (3) Deliverables, (4) Fee Structure, (5) Tender Pack, (6) Release/RFI/Addendum/Submission, (7) Tender Evaluation, (8) Tender Recommendation Report
+- FR012_RFI: System shall provide "Release, RFI, Addendum, Submission" section in Contractor Card with four components per firm (same as FR011a but auto-files submissions to Documents/Contractor/[trade]/filename.pdf)
 
 **Tender Evaluation - Price:**
 - FR012_TE1: System shall provide Tender Evaluation/Price section with tables for each firm displayed side-by-side
@@ -173,6 +177,16 @@ Current tools (shared drives, MS Office, Procore, Aconex) provide storage but la
 - FR037: System shall lock tender packages after release (immutable, no edits allowed)
 - FR038: System shall maintain complete audit trail with version control
 
+**Project Management & Navigation:**
+- FR039: System shall provide landing page as default view when users first log in
+- FR040: System shall display "Create New Project" action prominently on landing page
+- FR041: System shall create new projects with auto-generated default name (e.g., "New Project 1", "New Project 2") that can be renamed later
+- FR042: System shall display current project name at top of side navigation bar
+- FR043: System shall provide project switcher component in side navigation allowing users to switch between projects via dropdown/menu
+- FR044: System shall maintain project context across user sessions (remember last active project)
+- FR045: System shall allow users to rename projects inline from side navigation
+- FR046: System shall list all user projects in project switcher ordered by most recently accessed
+
 ### Non-Functional Requirements
 
 **Performance:**
@@ -204,6 +218,73 @@ Current tools (shared drives, MS Office, Procore, Aconex) provide storage but la
 ---
 
 ## User Journeys
+
+### Journey 0: Creating and Managing Projects
+
+**Actors:** Construction Manager (Primary User)
+
+**Preconditions:**
+- User has authenticated and logged into assemble.ai
+
+**Main Flow:**
+
+**Scenario A: First-Time User**
+
+1. **Landing Page Experience**
+   - User logs in for the first time
+   - System displays landing page with prominent "Create New Project" button/card
+   - Landing page shows empty state message: "Get started by creating your first project"
+
+2. **Create First Project**
+   - User clicks "Create New Project"
+   - System instantly creates new project with auto-generated name "New Project 1"
+   - System navigates user to Plan Card view
+   - Side navigation appears with "New Project 1" displayed at top
+
+3. **Rename Project**
+   - User clicks on project name "New Project 1" in side navigation
+   - Inline edit field appears
+   - User types new name (e.g., "123 Smith Street Apartments")
+   - User presses Enter or clicks outside to save
+   - System updates project name throughout interface
+
+**Scenario B: Returning User with Existing Projects**
+
+4. **Return to Last Project**
+   - User logs in
+   - System automatically loads last active project (e.g., "123 Smith Street Apartments")
+   - User sees familiar project context with side navigation showing current project name
+
+5. **Create Additional Project**
+   - User wants to start new project while working on existing one
+   - User clicks project name at top of side navigation
+   - Project switcher dropdown appears showing:
+     - Current project (highlighted): "123 Smith Street Apartments"
+     - Previous projects ordered by recency: "45 Jones Road Commercial"
+     - "Create New Project" option at bottom
+   - User clicks "Create New Project"
+   - System creates "New Project 2"
+   - System switches context to new project
+   - User renames to "789 Green Lane Development"
+
+6. **Switch Between Projects**
+   - User clicks project name in side navigation
+   - Project switcher dropdown displays all projects:
+     - "789 Green Lane Development" (current)
+     - "123 Smith Street Apartments"
+     - "45 Jones Road Commercial"
+   - User clicks "123 Smith Street Apartments"
+   - System loads that project's context
+   - All cards (Plan, Consultant, Contractor, etc.) now show data for selected project
+   - Side navigation updates to show "123 Smith Street Apartments" as current project
+
+**Postconditions:**
+- User can quickly create new projects without friction
+- User can seamlessly switch between multiple concurrent projects
+- Project context persists across sessions
+- All project data isolated by project
+
+---
 
 ### Journey 1: Creating a Consultant Tender Package (Architect)
 
@@ -378,8 +459,17 @@ Current tools (shared drives, MS Office, Procore, Aconex) provide storage but la
 
 - **Platform**: Desktop web application (1920x1080 minimum resolution)
 - **Layout**: Multi-card system with tabs, side-by-side columns for firm comparisons
+- **Landing Page**:
+  - Clean, focused interface for project creation
+  - Prominent "Create New Project" action for first-time users
+  - Project list/grid for returning users showing recent projects
+  - Minimal distractions—get users into a project quickly
 - **Navigation**:
   - Intuitive side navigation bar with all Cards listed (Plan, Consultant, Contractor, Procure, Cost Planning, etc.)
+  - **Project switcher** at top of side navigation showing current project name
+  - Dropdown/menu interface for switching between projects (ordered by most recently accessed)
+  - Inline rename capability for project name
+  - "Create New Project" option within project switcher
   - Ability to display 2-3 cards side-by-side (e.g., Plan + Consultant + Documents or Plan + Contractor + Documents)
   - Tabbed sections within each card
   - Collapsible/expandable chevrons throughout interface for managing section visibility and information density
@@ -417,8 +507,14 @@ Current tools (shared drives, MS Office, Procore, Aconex) provide storage but la
 ## Epic List
 
 ### Epic 1: Foundation & Core Data Architecture
-**Goal:** Establish project infrastructure, database schema, and core Card system with Plan Card functionality
-**Estimated Stories:** 8-10 stories
+**Goal:** Establish project infrastructure, database schema, project management, navigation system, and core Card system with Plan Card functionality
+**Estimated Stories:** 10-12 stories
+**Key Features:**
+- Landing page with project creation
+- Project switcher and navigation
+- Database schema with project isolation
+- Core Card architecture (Plan Card)
+- Side navigation with project context
 
 ### Epic 2: Document Management & AI Processing
 **Goal:** Implement document repository, drag-and-drop upload, AI extraction, and auto-population capabilities

@@ -105,6 +105,18 @@ export function ScopeSection({ projectId, disciplineId }: ScopeSectionProps) {
 
       if (result.success) {
         setContent(result.data);
+
+        // Auto-save the AI-generated content
+        setSaveStatus('saving');
+        const saveResult = await updateScopeAction(projectId, disciplineId, result.data);
+
+        if (saveResult.success) {
+          setSaveStatus('saved');
+          setTimeout(() => setSaveStatus('idle'), 2000);
+        } else {
+          setSaveStatus('error');
+          console.error('Failed to auto-save generated scope:', saveResult.error);
+        }
       } else {
         alert(result.error?.message || 'Failed to generate scope');
       }

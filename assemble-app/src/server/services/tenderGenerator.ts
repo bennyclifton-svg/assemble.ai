@@ -154,15 +154,13 @@ async function aggregateTenderContext(
     selectedPlanSectionIds: selectedPlanSections,
   });
 
-  // Fetch the discipline/trade card with sections
+  // Fetch the discipline/trade card with ALL sections first
   const card = await prisma.card.findUnique({
     where: { id: cardId },
     include: {
       sections: {
         where: {
-          id: {
-            in: selectedCardSections,
-          },
+          deletedAt: null,
         },
         include: {
           items: {
@@ -179,11 +177,35 @@ async function aggregateTenderContext(
     throw new Error(`Card not found: ${cardId}`);
   }
 
+  // Filter sections based on selectedCardSections
+  // Handle both cases: selectedCardSections could contain IDs or names/slugs
+  const filteredSections = card.sections.filter(section => {
+    // Check if the section ID is in selectedCardSections
+    if (selectedCardSections.includes(section.id)) {
+      return true;
+    }
+    // Check if the section name (lowercase) or slug format is in selectedCardSections
+    const sectionNameLower = section.name.toLowerCase();
+    const sectionSlug = section.name.toLowerCase().replace(/\s+/g, '-'); // "Fee Structure" -> "fee-structure"
+
+    // Special case for "Tender Release and Submission" -> "tender-release"
+    const sectionShortSlug = section.name.includes('Tender Release') ? 'tender-release' : null;
+
+    return selectedCardSections.includes(sectionNameLower) ||
+           selectedCardSections.includes(sectionSlug) ||
+           (sectionShortSlug && selectedCardSections.includes(sectionShortSlug));
+  });
+
+  // Replace card.sections with filtered sections
+  card.sections = filteredSections;
+
   console.log('📦 [aggregateTenderContext] Card sections fetched:', {
     cardId: card.id,
     cardType: card.type,
-    totalSectionsFetched: card.sections.length,
-    sectionNames: card.sections.map((s) => ({ id: s.id, name: s.name })),
+    totalSectionsAvailable: card.sections.length + filteredSections.length,
+    totalSectionsFetched: filteredSections.length,
+    sectionNames: filteredSections.map((s) => ({ id: s.id, name: s.name })),
+    selectedCardSections,
   });
 
   // Fetch Plan card with selected sections
@@ -299,9 +321,14 @@ async function aggregateTenderContext(
 
   // Helper: Extract table/fee structure section with formatting
   const extractTableSection = (sectionName: string, sections: any[]): string | undefined => {
+    console.log(`🔍 DEBUG: Looking for section "${sectionName}" in sections:`, sections.map(s => s.name));
     const section = sections.find((s) => s.name.toLowerCase() === sectionName.toLowerCase());
-    if (!section) return undefined;
+    if (!section) {
+      console.log(`⚠️ DEBUG: Section "${sectionName}" not found`);
+      return undefined;
+    }
 
+    console.log(`✅ DEBUG: Found section "${sectionName}" with ${section.items?.length || 0} items`);
     const lines: string[] = [];
 
     for (const item of section.items) {
@@ -310,12 +337,21 @@ async function aggregateTenderContext(
 
       // Handle category vs item types
       if (data.type === 'category') {
-        lines.push(`\n**${data.description || data.name}**`);
-      } else if (data.description || data.name) {
-        lines.push(`  - ${data.description || data.name}`);
+        lines.push(`\n**${data.name || data.description}**`);
+        if (data.name && data.description) {
+          lines.push(`  ${data.description}`);
+        }
+      } else if (data.name || data.description) {
+        // For Fee Structure items, show both name and description
+        if (data.name && data.description) {
+          lines.push(`- ${data.name}: ${data.description}`);
+        } else {
+          lines.push(`- ${data.name || data.description}`);
+        }
       }
     }
 
+    console.log(`📄 DEBUG: Extracted ${lines.length} lines from "${sectionName}"`);
     return lines.length > 0 ? lines.join('\n').trim() : undefined;
   };
 
@@ -325,27 +361,90 @@ async function aggregateTenderContext(
   // Debug: Log what we received from database
   console.log('🔍 DEBUG: Plan Card Sections from DB:', JSON.stringify(planSections, null, 2));
   console.log('🔍 DEBUG: Config selectedPlanSections:', config.selectedPlanSections);
+  console.log('🔍 DEBUG: Card Sections from DB:', cardSections.map(s => ({ name: s.name, itemCount: s.items?.length || 0 })));
 
   // Query DisciplineData for Scope and Deliverables (these are NOT in Section/Item structure)
   let disciplineScope: string | undefined;
   let disciplineDeliverables: string | undefined;
 
   if (card.type === 'CONSULTANT') {
-    const disciplineData = await prisma.disciplineData.findUnique({
+    // First, get ALL sections for this card to find Scope and Deliverables section IDs
+    // We need this because Scope/Deliverables are stored in DisciplineData, not as Items
+    const allCardSections = await prisma.section.findMany({
       where: {
-        projectId_disciplineId: {
-          projectId: card.projectId,
-          disciplineId: cardId,
-        },
+        cardId: cardId,
+        deletedAt: null,
       },
       select: {
-        scope: true,
-        deliverables: true,
+        id: true,
+        name: true,
       },
     });
 
-    disciplineScope = disciplineData?.scope || undefined;
-    disciplineDeliverables = disciplineData?.deliverables || undefined;
+    // Find the section IDs for Scope and Deliverables
+    const scopeSection = allCardSections.find(s => s.name === 'Scope' || s.name === 'scope');
+    const deliverablesSection = allCardSections.find(s => s.name === 'Deliverables' || s.name === 'deliverables');
+
+    // Check if these sections are in the selectedCardSections array
+    // Handle both cases: selectedCardSections could contain IDs or names/slugs
+    const isScopeSelected = scopeSection ? (
+      selectedCardSections.includes(scopeSection.id) ||
+      selectedCardSections.includes('scope') ||
+      selectedCardSections.includes('Scope')
+    ) : false;
+    const isDeliverablesSelected = deliverablesSection ? (
+      selectedCardSections.includes(deliverablesSection.id) ||
+      selectedCardSections.includes('deliverables') ||
+      selectedCardSections.includes('Deliverables')
+    ) : false;
+
+    console.log('🔍 DEBUG: Scope/Deliverables selection check:', {
+      scopeSectionId: scopeSection?.id,
+      deliverablesSectionId: deliverablesSection?.id,
+      selectedCardSections,
+      isScopeSelected,
+      isDeliverablesSelected,
+    });
+
+    // Only query DisciplineData if the respective sections are selected
+    if (isScopeSelected || isDeliverablesSelected) {
+      console.log('📊 [aggregateTenderContext] Fetching DisciplineData:', {
+        projectId: card.projectId,
+        disciplineId: cardId,
+        note: 'Card.id should match discipline string (e.g., "architect", "access")',
+      });
+
+      const disciplineData = await prisma.disciplineData.findUnique({
+        where: {
+          projectId_disciplineId: {
+            projectId: card.projectId,
+            disciplineId: cardId,
+          },
+        },
+        select: {
+          scope: true,
+          deliverables: true,
+        },
+      });
+
+      if (!disciplineData) {
+        console.warn('⚠️ [aggregateTenderContext] No DisciplineData found for:', {
+          projectId: card.projectId,
+          disciplineId: cardId,
+          hint: 'Ensure Card.id matches discipline string and DisciplineData exists',
+        });
+      } else {
+        console.log('✅ [aggregateTenderContext] DisciplineData found:', {
+          hasScope: !!disciplineData.scope,
+          hasDeliverables: !!disciplineData.deliverables,
+        });
+      }
+
+      // Only include scope if the Scope section is selected
+      disciplineScope = isScopeSelected ? (disciplineData?.scope || undefined) : undefined;
+      // Only include deliverables if the Deliverables section is selected
+      disciplineDeliverables = isDeliverablesSelected ? (disciplineData?.deliverables || undefined) : undefined;
+    }
   }
 
   // Build context object with comprehensive extraction
@@ -563,8 +662,8 @@ function buildManualTenderContent(context: TenderPromptContext): GeneratedTender
     ? projectOverviewSections.join('\n\n')
     : '';
 
-  // Timeline is actually the Staging content
-  const timeline = stagingContent;
+  // Timeline - removed to avoid duplication (Staging is already in Project Overview)
+  const timeline = '';
 
   // Submission requirements (from Tender Release section if available)
   const submissionRequirements = context.tenderRelease || '';

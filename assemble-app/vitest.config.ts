@@ -3,9 +3,14 @@ import path from 'path';
 
 export default defineConfig({
   test: {
-    environment: 'node',
+    environment: 'happy-dom',
     globals: true,
-    setupFiles: [],
+    setupFiles: ['./src/test/setup.ts'],
+  },
+  css: {
+    postcss: {
+      plugins: [], // Use empty PostCSS config for tests
+    },
   },
   resolve: {
     alias: {

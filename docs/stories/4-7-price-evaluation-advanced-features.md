@@ -2,6 +2,29 @@
 
 Status: Draft
 
+## ⚠️ CRITICAL DEPENDENCY
+
+**This story REQUIRES Story 4.5 Handsontable implementation.**
+
+**Prerequisites:**
+- Handsontable library installed (`handsontable @handsontable/react`)
+- PriceEvaluationTable component fully functional
+- Multi-table orchestration requires Handsontable's context menu and export plugins
+
+**Handsontable Features Used in This Story:**
+- Context Menu plugin for "Move to Table X" functionality (AC #1)
+- ExportFile plugin for Excel export (AC #6)
+- NestedRows plugin for hierarchical structures
+- Custom hooks extending Handsontable data model
+
+**Additional Dependency:**
+```bash
+npm install @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities
+```
+Required for drag-to-reorder tables functionality (AC #4).
+
+---
+
 ## Story
 
 As a user,

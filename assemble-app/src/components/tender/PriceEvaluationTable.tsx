@@ -136,6 +136,7 @@ export function PriceEvaluationTable({
 
         const text = document.createElement('span');
         text.textContent = value;
+        text.style.color = '#111827'; // text-gray-900
         wrapper.appendChild(text);
 
         td.appendChild(wrapper);
@@ -166,6 +167,7 @@ export function PriceEvaluationTable({
           td.style.fontWeight = 'bold';
           td.style.backgroundColor = '#f5f5f5';
           td.style.textAlign = 'right';
+          td.style.color = '#111827'; // text-gray-900
 
           // Calculate sum from children
           const firmId = firm.id;
@@ -179,6 +181,7 @@ export function PriceEvaluationTable({
         } else {
           // Regular numeric renderer
           Handsontable.renderers.NumericRenderer(instance, td, row, col, prop, value, cellProperties);
+          td.style.color = '#111827'; // text-gray-900
         }
 
         return td;
@@ -299,7 +302,7 @@ export function PriceEvaluationTable({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">
+        <h3 className="text-lg font-semibold text-gray-900">
           Table {tableNumber}: {tableName}
         </h3>
         {!readOnly && (
@@ -308,6 +311,7 @@ export function PriceEvaluationTable({
               variant="outline"
               size="sm"
               onClick={() => handleAddItem(false)}
+              className="text-gray-900 hover:bg-gray-100"
             >
               <Plus className="h-4 w-4 mr-1" />
               Add Item
@@ -316,6 +320,7 @@ export function PriceEvaluationTable({
               variant="outline"
               size="sm"
               onClick={() => handleAddItem(true)}
+              className="text-gray-900 hover:bg-gray-100"
             >
               <Plus className="h-4 w-4 mr-1" />
               Add Category
@@ -356,24 +361,36 @@ export function PriceEvaluationTable({
         />
       </div>
 
-      {/* Table Sub-total */}
-      <div className="flex justify-end">
-        <div className="text-sm font-medium">
-          Table Sub-total:
-          <span className="ml-2 text-lg">
-            ${firms.reduce((total, firm) => {
-              const firmTotal = items.reduce((sum, item) => {
-                if (item.isCategory && item.children) {
-                  return sum + calculateCategorySum(item.children, firm.id);
-                } else if (!item.isCategory) {
-                  const price = item.firmPrices?.find(p => p.firmId === firm.id);
-                  return sum + (price?.amount || 0);
-                }
-                return sum;
-              }, 0);
-              return total + firmTotal;
-            }, 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-          </span>
+      {/* Table Sub-total - Per Firm */}
+      <div className="border-t pt-3">
+        <div className="flex items-center" style={{ paddingLeft: '50px' }}>
+          {/* Description column */}
+          <div className="font-semibold text-gray-900" style={{ width: '350px' }}>
+            Table Sub-total:
+          </div>
+
+          {/* Firm columns */}
+          {firms.map((firm) => {
+            const firmTotal = items.reduce((sum, item) => {
+              if (item.isCategory && item.children) {
+                return sum + calculateCategorySum(item.children, firm.id);
+              } else if (!item.isCategory) {
+                const price = item.firmPrices?.find(p => p.firmId === firm.id);
+                return sum + (price?.amount || 0);
+              }
+              return sum;
+            }, 0);
+
+            return (
+              <div
+                key={firm.id}
+                className="text-right font-bold text-gray-900"
+                style={{ width: '150px', paddingRight: '12px' }}
+              >
+                ${firmTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

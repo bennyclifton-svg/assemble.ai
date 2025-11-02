@@ -1,6 +1,16 @@
 # Story 3.8: Tender Release and Submission Tracking
 
-Status: Draft
+**Status: NOT USED - MERGED INTO STORY 3-9**
+
+> **⚠️ IMPORTANT:** This story has been consolidated with Story 3-6 (RFI and Addendum Management) to create Story 3-9 (Release, RFI, Addendum, Submission Management).
+>
+> **Refer to Story 3-9** for the consolidated implementation that includes:
+> - Tender Release tracking (from this story)
+> - Submission tracking (from this story)
+> - RFI management (from Story 3-6 - already implemented)
+> - Addendum management (from Story 3-6 - already implemented)
+>
+> All functionality from this story is preserved in Story 3-9 within a unified "Release, RFI, Addendum, Submission" section.
 
 ## Story
 

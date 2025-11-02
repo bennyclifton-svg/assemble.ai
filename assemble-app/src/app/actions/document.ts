@@ -477,11 +477,21 @@ export async function getDocuments(
     });
 
     // Generate signed URLs for secure access
+    // Handle missing files gracefully by returning null for signedUrl
     const documentsWithUrls = await Promise.all(
-      documents.map(async (doc) => ({
-        ...doc,
-        signedUrl: await getSignedDownloadUrl(doc.s3Key),
-      }))
+      documents.map(async (doc) => {
+        const signedUrl = await getSignedDownloadUrl(doc.s3Key);
+
+        // Log if file is missing in storage
+        if (!signedUrl) {
+          console.warn(`Document ${doc.id} (${doc.name}) has missing file in storage: ${doc.s3Key}`);
+        }
+
+        return {
+          ...doc,
+          signedUrl,
+        };
+      })
     );
 
     return { success: true, data: documentsWithUrls };

@@ -18,14 +18,21 @@ so that we can support the flexible multi-card system with proper data relations
 6. **AC-2.6**: Audit trail fields (createdAt, updatedAt, createdBy, updatedBy) on all tables
 7. **AC-2.7**: Proper indexes on foreign keys and commonly queried fields
 8. **AC-2.8**: Migration runs successfully and schema matches specification
+9. **AC-2.9**: Project model includes name, userId, and lastAccessedAt for project management
+10. **AC-2.10**: Projects can be queried and sorted by lastAccessedAt for "most recent" ordering
+11. **AC-2.11**: All Cards linked to Projects via projectId foreign key with proper isolation
+12. **AC-2.12**: Cascade delete from Project to Cards ensures data cleanup
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create Project and Card models (AC: 2.1)
-  - [ ] Define Project model with id, name, userId fields
-  - [ ] Define Card model with projectId, type (enum), and audit fields
-  - [ ] Create CardType enum with all 8 card types
-  - [ ] Add index on [projectId, type] for efficient queries
+- [x] Task 1: Create Project and Card models (AC: 2.1, 2.9, 2.10, 2.11, 2.12)
+  - [x] Define Project model with id, name, userId, lastAccessedAt fields
+  - [x] Add audit fields to Project (createdAt, updatedAt, deletedAt)
+  - [x] Add index on [userId, lastAccessedAt] for sorting recent projects
+  - [x] Define Card model with projectId, type (enum), and audit fields
+  - [x] Create CardType enum with all 9 card types (including DELIVER)
+  - [x] Add index on [projectId, type] for efficient queries
+  - [x] Implement cascade delete from Project to Cards (onDelete: Cascade)
 
 - [ ] Task 2: Create Section model (AC: 2.2, 2.4)
   - [ ] Define Section model with cardId foreign key
@@ -65,24 +72,29 @@ so that we can support the flexible multi-card system with proper data relations
   - [ ] Test with Prisma Studio
   - [ ] Create seed script for test data
 
-- [ ] Task 8: Create database service layer
+- [x] Task 8: Create database service layer (Partial - project actions completed)
+  - [x] Create src/app/actions/project.ts (server action pattern instead of service)
+  - [x] Implement project CRUD operations (create, getById, getUserProjects, updateLastAccessed, rename, softDelete)
   - [ ] Create src/server/services/cardService.ts
-  - [ ] Implement CRUD operations with soft delete
+  - [ ] Implement card CRUD operations with soft delete
   - [ ] Add transaction support for multi-table operations
-  - [ ] Write basic integration tests
+  - [ ] Write basic integration tests for project and card services
 
 ## Dev Notes
 
 ### Prisma Schema Structure
 ```prisma
 model Project {
-  id          String   @id @default(cuid())
-  name        String
-  userId      String
-  cards       Card[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  deletedAt   DateTime?
+  id              String   @id @default(cuid())
+  name            String
+  userId          String
+  lastAccessedAt  DateTime @default(now())
+  cards           Card[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  @@index([userId, lastAccessedAt])
 }
 
 model Card {
@@ -153,6 +165,10 @@ model Item {
 2. **Audit Middleware**: Auto-populate createdBy/updatedBy from auth context
 3. **Transaction Pattern**: Use for operations spanning multiple tables
 4. **Type Safety**: Leverage Prisma's generated types throughout
+5. **Project Context**: lastAccessedAt updated whenever user navigates to a project
+6. **Project Isolation**: All data queries must filter by projectId to ensure proper isolation
+7. **Auto-Naming**: Project service generates sequential names based on user's existing project count
+8. **Cascade Deletes**: Deleting a project removes all associated Cards, Sections, and Items
 
 ### Testing Approach
 - Integration tests for CRUD operations
@@ -181,4 +197,40 @@ model Item {
 
 ### Completion Notes List
 
+**Project Schema Enhancements - November 2, 2025**
+
+Enhanced Project model with project management fields and server actions:
+
+**Database Schema Updates** (`prisma/schema.prisma`):
+- Added `lastAccessedAt` field to Project model with `@default(now())`
+- Added index on `[userId, lastAccessedAt]` for efficient "most recent projects" queries
+- Schema already had proper cascade deletes from Project to Cards (verified)
+- Ran `npx prisma db push` to apply schema changes to database
+
+**Server Actions** (`src/app/actions/project.ts`):
+- Implemented full project CRUD using Next.js server actions pattern
+- `getUserProjects()`: Returns projects ordered by lastAccessedAt DESC
+- `createProject()`: Auto-generates sequential names based on user's project count
+- `getProject()`: Fetches and validates single project ownership
+- `renameProject()`: Updates project name with authorization checks
+- `updateLastAccessed()`: Updates timestamp (called when project is accessed)
+- `deleteProject()`: Soft delete implementation
+- All actions use ActionResult pattern for consistent error handling
+
+**Features Delivered**:
+- Project isolation with userId foreign keys
+- Efficient querying with proper indexes
+- Soft delete capability (deletedAt timestamp)
+- Auto-increment naming logic
+- Server-side authorization checks
+- Type-safe error handling
+
+**Acceptance Criteria Met**: AC-2.9, AC-2.10, AC-2.11 (verified), AC-2.12 (verified)
+
 ### File List
+
+**Created**:
+- `src/app/actions/project.ts`
+
+**Modified**:
+- `prisma/schema.prisma` (added lastAccessedAt field and index)

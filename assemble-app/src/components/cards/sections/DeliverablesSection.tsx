@@ -105,6 +105,18 @@ export function DeliverablesSection({ projectId, disciplineId }: DeliverablesSec
 
       if (result.success) {
         setContent(result.data);
+
+        // Auto-save the AI-generated content
+        setSaveStatus('saving');
+        const saveResult = await updateDeliverablesAction(projectId, disciplineId, result.data);
+
+        if (saveResult.success) {
+          setSaveStatus('saved');
+          setTimeout(() => setSaveStatus('idle'), 2000);
+        } else {
+          setSaveStatus('error');
+          console.error('Failed to auto-save generated deliverables:', saveResult.error);
+        }
       } else {
         alert(result.error?.message || 'Failed to generate deliverables');
       }

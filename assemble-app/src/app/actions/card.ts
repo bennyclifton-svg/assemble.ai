@@ -534,13 +534,47 @@ export async function initializeDetailsSectionAction(
       };
     }
 
-    // Check if section already exists with items
-    const existing = await getSectionItemsAction(projectId, 'details');
-    if (existing.success && existing.data.length > 0) {
-      return {
-        success: true,
-        data: { count: existing.data.length },
-      };
+    // IMPORTANT: Check case-insensitive to prevent duplicates from seed data
+    // Seed may use 'Details' while this uses 'details'
+    // First check for any existing Details section regardless of casing
+    const planCard = await prisma.card.findFirst({
+      where: {
+        projectId,
+        type: 'PLAN',
+        deletedAt: null,
+      },
+      include: {
+        sections: {
+          where: {
+            deletedAt: null,
+          },
+        },
+      },
+    });
+
+    // Check for existing section with case-insensitive matching
+    const existingSection = planCard?.sections.find(
+      s => s.name.toLowerCase() === 'details'
+    );
+
+    if (existingSection) {
+      // Check if it has items
+      const items = await prisma.item.findMany({
+        where: {
+          sectionId: existingSection.id,
+          deletedAt: null,
+        },
+      });
+
+      if (items.length > 0) {
+        console.log(`✅ Section already has ${items.length} items`);
+        return {
+          success: true,
+          data: { count: items.length },
+        };
+      }
+      // Section exists but has no items - continue to create default items
+      console.log('📝 Section exists but has no items - creating defaults');
     }
 
     // Find or create Plan card
@@ -553,7 +587,6 @@ export async function initializeDetailsSectionAction(
       include: {
         sections: {
           where: {
-            name: 'details',
             deletedAt: null,
           },
         },
@@ -587,8 +620,10 @@ export async function initializeDetailsSectionAction(
       });
     }
 
-    // Get or create section
-    let sectionId = card.sections[0]?.id;
+    // Get or create section - use existing if found earlier
+    // Also check card.sections for case-insensitive match
+    const detailsSection = card.sections.find(s => s.name.toLowerCase() === 'details');
+    let sectionId = existingSection?.id || detailsSection?.id;
     if (!sectionId) {
       const section = await prisma.section.create({
         data: {
@@ -659,13 +694,46 @@ export async function initializeObjectivesSectionAction(
       };
     }
 
-    // Check if section already exists with items
-    const existing = await getSectionItemsAction(projectId, 'objectives');
-    if (existing.success && existing.data.length > 0) {
-      return {
-        success: true,
-        data: { count: existing.data.length },
-      };
+    // IMPORTANT: Check case-insensitive to prevent duplicates from seed data
+    // Seed may use 'Objectives' while this uses 'objectives'
+    const planCard = await prisma.card.findFirst({
+      where: {
+        projectId,
+        type: 'PLAN',
+        deletedAt: null,
+      },
+      include: {
+        sections: {
+          where: {
+            deletedAt: null,
+          },
+        },
+      },
+    });
+
+    // Check for existing section with case-insensitive matching
+    const existingSection = planCard?.sections.find(
+      s => s.name.toLowerCase() === 'objectives'
+    );
+
+    if (existingSection) {
+      // Check if it has items
+      const items = await prisma.item.findMany({
+        where: {
+          sectionId: existingSection.id,
+          deletedAt: null,
+        },
+      });
+
+      if (items.length > 0) {
+        console.log(`✅ Section already has ${items.length} items`);
+        return {
+          success: true,
+          data: { count: items.length },
+        };
+      }
+      // Section exists but has no items - continue to create default items
+      console.log('📝 Section exists but has no items - creating defaults');
     }
 
     // Find or create Plan card
@@ -707,8 +775,8 @@ export async function initializeObjectivesSectionAction(
       }
     }
 
-    // Get or create section
-    let sectionId = card.sections?.[0]?.id;
+    // Get or create section - use existing if found earlier
+    let sectionId = existingSection?.id || card.sections?.[0]?.id;
     if (!sectionId) {
       const section = await prisma.section.create({
         data: {
@@ -1040,21 +1108,44 @@ export async function initializeStagingSectionAction(
       };
     }
 
-    // Check if staging section already exists
-    const existingResult = await getSectionItemsAction(projectId, 'staging');
-    if (existingResult.success && existingResult.data.length > 0) {
-      return { success: true, data: undefined };
-    }
-
-    // Get or create Plan card
-    let card = await prisma.card.findFirst({
+    // IMPORTANT: Check case-insensitive to prevent duplicates from seed data
+    // Seed may use 'Staging' while this uses 'staging'
+    const planCard = await prisma.card.findFirst({
       where: {
         projectId,
         type: 'PLAN',
         deletedAt: null,
       },
+      include: {
+        sections: {
+          where: {
+            deletedAt: null,
+          },
+        },
+      },
     });
 
+    // Check for existing section with case-insensitive matching
+    const existingSection = planCard?.sections.find(
+      s => s.name.toLowerCase() === 'staging'
+    );
+
+    if (existingSection) {
+      // Check if it has items
+      const items = await prisma.item.findMany({
+        where: {
+          sectionId: existingSection.id,
+          deletedAt: null,
+        },
+      });
+
+      if (items.length > 0) {
+        return { success: true, data: undefined };
+      }
+    }
+
+    // Get or create Plan card
+    let card = planCard;
     if (!card) {
       card = await prisma.card.create({
         data: {
@@ -1066,25 +1157,29 @@ export async function initializeStagingSectionAction(
       });
     }
 
-    // Get or create staging section
-    let section = await prisma.section.findFirst({
-      where: {
-        cardId: card.id,
-        name: 'staging',
-        deletedAt: null,
-      },
-    });
-
+    // Get or create staging section - use existing if found earlier
+    let section = existingSection;
     if (!section) {
-      section = await prisma.section.create({
-        data: {
+      // Try to find by exact match
+      section = await prisma.section.findFirst({
+        where: {
           cardId: card.id,
           name: 'staging',
-          order: 2, // After objectives
-          createdBy: userId,
-          updatedBy: userId,
+          deletedAt: null,
         },
       });
+
+      if (!section) {
+        section = await prisma.section.create({
+          data: {
+            cardId: card.id,
+            name: 'staging',
+            order: 2, // After objectives
+            createdBy: userId,
+            updatedBy: userId,
+          },
+        });
+      }
     }
 
     // Create default stages

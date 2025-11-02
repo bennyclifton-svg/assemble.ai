@@ -29,6 +29,20 @@ import {
   deleteAddendumAction,
   uploadAddendumDocumentAction,
 } from '@/app/actions/addendum';
+import {
+  getReleasesAction,
+  createReleaseAction,
+  updateReleaseDateAction,
+  uploadReleasePackageAction,
+  deleteReleaseAction,
+} from '@/app/actions/release';
+import {
+  getTenderSubmissionsAction,
+  createTenderSubmissionAction,
+  updateSubmissionDateAction,
+  uploadSubmissionDocumentAction,
+  deleteTenderSubmissionAction,
+} from '@/app/actions/tenderSubmission';
 import { getFirmsAction } from '@/app/actions/firm';
 
 // Main container component that displays RFI/Addendum sections for all firms
@@ -62,15 +76,37 @@ type AddendumData = {
   displayOrder: number;
 };
 
-// Individual firm card with RFI and Addendum sections
+type ReleaseData = {
+  id: string;
+  releaseDate: Date | null;
+  packagePath: string | null;
+  fileName: string | null;
+};
+
+type TenderSubmissionData = {
+  id: string;
+  submissionNumber: number;
+  submissionDate: Date | null;
+  documentPath: string | null;
+  fileName: string | null;
+};
+
+// Individual firm card with Release, RFI, Addendum, and Submission sections
 function FirmRfiCard({ firmId, firmName, cardType }: FirmRfiCardProps) {
+  const [release, setRelease] = useState<ReleaseData | null>(null);
   const [rfis, setRfis] = useState<RfiData[]>([]);
   const [addendums, setAddendums] = useState<AddendumData[]>([]);
+  const [submissions, setSubmissions] = useState<TenderSubmissionData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingRfiId, setEditingRfiId] = useState<string | null>(null);
   const [editRfiTitle, setEditRfiTitle] = useState('');
   const [editingAddendumId, setEditingAddendumId] = useState<string | null>(null);
   const [editAddendumTitle, setEditAddendumTitle] = useState('');
+
+  // Drag-drop states for Release section
+  const [isDragOverRelease, setIsDragOverRelease] = useState(false);
+  const [isUploadingRelease, setIsUploadingRelease] = useState(false);
+  const releaseFileInputRef = useRef<HTMLInputElement>(null);
 
   // Drag-drop states for RFI section
   const [isDragOverRfi, setIsDragOverRfi] = useState(false);
@@ -82,15 +118,29 @@ function FirmRfiCard({ firmId, firmName, cardType }: FirmRfiCardProps) {
   const [isExtractingAddendum, setIsExtractingAddendum] = useState(false);
   const addendumFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load RFIs and Addendums on mount
+  // Drag-drop states for Submission section
+  const [isDragOverSubmission, setIsDragOverSubmission] = useState(false);
+  const [isUploadingSubmission, setIsUploadingSubmission] = useState(false);
+  const submissionFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load all data on mount
   useEffect(() => {
     loadData();
   }, [firmId]);
 
   async function loadData() {
     setIsLoading(true);
-    await Promise.all([loadRfis(), loadAddendums()]);
+    await Promise.all([loadRelease(), loadRfis(), loadAddendums(), loadSubmissions()]);
     setIsLoading(false);
+  }
+
+  async function loadRelease() {
+    const result = await getReleasesAction(firmId);
+    if (result.success) {
+      const releases = result.data as ReleaseData[];
+      // There should only be one release per firm, get the first one
+      setRelease(releases.length > 0 ? releases[0] : null);
+    }
   }
 
   async function loadRfis() {
@@ -136,6 +186,78 @@ function FirmRfiCard({ firmId, firmName, cardType }: FirmRfiCardProps) {
       setAddendums(addendumsWithPlaceholders);
     }
   }
+
+  async function loadSubmissions() {
+    const result = await getTenderSubmissionsAction(firmId);
+    if (result.success) {
+      const submissionsData = result.data as TenderSubmissionData[];
+      setSubmissions(submissionsData);
+    }
+  }
+
+  // Release handlers
+  async function handleReleaseDateChange(date: string) {
+    if (!release || !release.id) return;
+
+    const result = await updateReleaseDateAction(release.id, date ? new Date(date) : null);
+    if (result.success) {
+      await loadRelease();
+    }
+  }
+
+  async function handleReleasePackageUpload(file: File) {
+    setIsUploadingRelease(true);
+
+    try {
+      const today = new Date();
+      const dateStr = formatDateToISO(today);
+      const basePath = cardType === 'consultant' ? 'Consultant' : 'Contractor';
+      const packagePath = `Documents/${basePath}/${firmName}/TenderPackage-${dateStr}.pdf`;
+
+      if (!release) {
+        // Create new release if it doesn't exist
+        const result = await createReleaseAction(firmId, today, packagePath, file.name);
+        if (result.success) {
+          await loadRelease();
+        }
+      } else {
+        // Update existing release
+        const result = await uploadReleasePackageAction(release.id, packagePath, file.name);
+        if (result.success) {
+          await loadRelease();
+        }
+      }
+    } catch (error) {
+      console.error('Error uploading release package:', error);
+      alert('Failed to upload release package');
+    } finally {
+      setIsUploadingRelease(false);
+    }
+  }
+
+  const handleReleaseDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOverRelease(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+
+    const file = files[0];
+    await handleReleasePackageUpload(file);
+  };
+
+  const handleReleaseFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    await handleReleasePackageUpload(file);
+
+    if (releaseFileInputRef.current) {
+      releaseFileInputRef.current.value = '';
+    }
+  };
 
   // RFI handlers
   async function handleAddRfi() {
@@ -414,6 +536,71 @@ function FirmRfiCard({ firmId, firmName, cardType }: FirmRfiCardProps) {
     }
   }
 
+  // Submission handlers
+  async function handleSubmissionDateChange(submissionId: string, date: string) {
+    const result = await updateSubmissionDateAction(submissionId, date ? new Date(date) : null);
+    if (result.success) {
+      await loadSubmissions();
+    }
+  }
+
+  async function handleSubmissionDocumentUpload(file: File) {
+    setIsUploadingSubmission(true);
+
+    try {
+      const today = new Date();
+      const basePath = cardType === 'consultant' ? 'Consultant' : 'Contractor';
+      // For consultant: Documents/Consultant/[discipline]/filename.pdf
+      // For contractor: Documents/Contractor/[trade]/filename.pdf
+      // Note: disciplineId would need to be passed to this component for proper pathing
+      // For now, using firmName as a placeholder for discipline/trade
+      const documentPath = `Documents/${basePath}/${firmName}/${file.name}`;
+
+      const result = await createTenderSubmissionAction(firmId, today, documentPath, file.name);
+      if (result.success) {
+        await loadSubmissions();
+      }
+    } catch (error) {
+      console.error('Error uploading submission:', error);
+      alert('Failed to upload submission');
+    } finally {
+      setIsUploadingSubmission(false);
+    }
+  }
+
+  async function handleDeleteSubmission(submissionId: string) {
+    if (confirm('Delete this submission?')) {
+      const result = await deleteTenderSubmissionAction(submissionId);
+      if (result.success) {
+        await loadSubmissions();
+      }
+    }
+  }
+
+  const handleSubmissionDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOverSubmission(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+
+    const file = files[0];
+    await handleSubmissionDocumentUpload(file);
+  };
+
+  const handleSubmissionFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    await handleSubmissionDocumentUpload(file);
+
+    if (submissionFileInputRef.current) {
+      submissionFileInputRef.current.value = '';
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex-shrink-0 w-80 bg-white border border-gray-200 rounded-lg p-4">
@@ -430,6 +617,88 @@ function FirmRfiCard({ firmId, firmName, cardType }: FirmRfiCardProps) {
         {/* Firm Header */}
         <div className="pb-3 border-b">
           <h3 className="font-semibold text-gray-900">{firmName}</h3>
+        </div>
+
+        {/* Release Section */}
+        <div className="space-y-2">
+          <h4 className="text-sm font-semibold text-gray-700">Release</h4>
+
+          {/* Release Date */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-600 w-16">Date:</label>
+            <input
+              type="date"
+              value={release?.releaseDate ? formatDateToISO(new Date(release.releaseDate)) : ''}
+              onChange={(e) => handleReleaseDateChange(e.target.value)}
+              className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Release Package Upload Zone */}
+          <div
+            className="relative"
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsDragOverRelease(true);
+            }}
+            onDragLeave={(e) => {
+              e.stopPropagation();
+              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              const x = e.clientX;
+              const y = e.clientY;
+              if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
+                setIsDragOverRelease(false);
+              }
+            }}
+            onDrop={handleReleaseDrop}
+          >
+            {(isDragOverRelease || isUploadingRelease) && (
+              <div className="absolute inset-0 bg-blue-50 bg-opacity-95 flex items-center justify-center z-10 border-2 border-dashed border-blue-400 rounded">
+                <div className="text-center">
+                  {isUploadingRelease ? (
+                    <>
+                      <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-2" />
+                      <p className="text-blue-700 font-medium text-sm">Uploading Package...</p>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                      <p className="text-blue-700 font-medium text-sm">Drop Tender Package</p>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={() => releaseFileInputRef.current?.click()}
+              className={`w-full px-3 py-2 text-xs border rounded transition-colors flex items-center justify-center gap-1 ${
+                release?.packagePath
+                  ? 'bg-green-50 border-green-300 text-green-700'
+                  : 'text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              {release?.packagePath ? (
+                <>
+                  <FileText className="w-3 h-3" />
+                  Package Uploaded
+                </>
+              ) : (
+                <>
+                  <Upload className="w-3 h-3" />
+                  Upload Tender Package
+                </>
+              )}
+            </button>
+            <input
+              ref={releaseFileInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={handleReleaseFileSelect}
+              className="hidden"
+            />
+          </div>
         </div>
 
         {/* RFI Section */}
@@ -746,6 +1015,119 @@ function FirmRfiCard({ firmId, firmName, cardType }: FirmRfiCardProps) {
             <Plus className="w-3 h-3" />
             Add Addendum
           </button>
+        </div>
+
+        {/* Submission Section */}
+        <div className="space-y-2 pt-4 border-t">
+          <h4 className="text-sm font-semibold text-gray-700">Submissions</h4>
+
+          {/* Submission Upload Zone */}
+          <div
+            className="relative"
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsDragOverSubmission(true);
+            }}
+            onDragLeave={(e) => {
+              e.stopPropagation();
+              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              const x = e.clientX;
+              const y = e.clientY;
+              if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
+                setIsDragOverSubmission(false);
+              }
+            }}
+            onDrop={handleSubmissionDrop}
+          >
+            {(isDragOverSubmission || isUploadingSubmission) && (
+              <div className="absolute inset-0 bg-blue-50 bg-opacity-95 flex items-center justify-center z-10 border-2 border-dashed border-blue-400 rounded">
+                <div className="text-center">
+                  {isUploadingSubmission ? (
+                    <>
+                      <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-2" />
+                      <p className="text-blue-700 font-medium text-sm">Uploading Submission...</p>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                      <p className="text-blue-700 font-medium text-sm">Drop Submission document</p>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={() => submissionFileInputRef.current?.click()}
+              className="w-full px-3 py-2 text-xs text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors flex items-center justify-center gap-1"
+            >
+              <Upload className="w-3 h-3" />
+              Upload or drop submission
+            </button>
+            <input
+              ref={submissionFileInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={handleSubmissionFileSelect}
+              className="hidden"
+            />
+          </div>
+
+          {/* Submission List */}
+          <div className="space-y-1 max-h-48 overflow-y-auto">
+            {submissions.length === 0 ? (
+              <div className="text-xs text-gray-400 italic p-2">
+                No submissions yet
+              </div>
+            ) : (
+              submissions.map((submission) => (
+                <div
+                  key={submission.id}
+                  className={`flex items-center gap-2 p-2 border rounded-md ${
+                    submission.documentPath
+                      ? 'bg-green-50 border-green-300'
+                      : 'bg-gray-50 border-gray-200'
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium text-gray-900">
+                      Submission {submission.submissionNumber}
+                    </div>
+                    {submission.fileName && (
+                      <div className="text-xs text-gray-500 truncate">
+                        {submission.fileName}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="date"
+                      value={submission.submissionDate ? formatDateToISO(new Date(submission.submissionDate)) : ''}
+                      onChange={(e) => handleSubmissionDateChange(submission.id, e.target.value)}
+                      className="px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      style={{ width: '110px' }}
+                    />
+
+                    {submission.documentPath && (
+                      <div className="p-0.5 bg-blue-100 text-blue-600 rounded" title="Document uploaded">
+                        <FileText className="w-3 h-3" />
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => handleDeleteSubmission(submission.id)}
+                      className="flex-shrink-0 p-0.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
+                      title="Delete Submission"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>

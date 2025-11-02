@@ -380,19 +380,25 @@ So that suppliers can provide structured pricing.
 
 ---
 
-**Story 3.6: RFI and Addendum Management**
+**Story 3.6: RFI and Addendum Management** ✅ IMPLEMENTED
 
 As a user,
 I want to manage RFIs and addendums during tender period,
 So that I can handle clarifications systematically.
 
+**Status:** Complete (implemented October 2025)
+
 **Acceptance Criteria:**
-1. Two tables: RFI table and Addendum table
-2. RFI table columns: RFI No, Detail, Date Received, Response, Response Date
-3. Addendum table columns: Addendum No, Detail, Date Released
-4. Drag-drop RFI document auto-creates entry and files document
-5. Drag-drop response updates RFI entry and files response
-6. No AI review of RFI content (manual process)
+1. Column-based layout (1 column per firm, side-by-side)
+2. RFI table per firm: RFI No, Detail, Date Received, Document
+3. Addendum table per firm: Addendum No, Detail, Date Released, Document
+4. Toggle states: Ghosted (anticipated/pre-prepared) vs Green (received/released)
+5. Drag-drop document upload with auto-filing
+6. Selective addendum issuance per firm
+7. Add/delete/reorder RFI and Addendum items per firm
+8. Double-click title editing
+
+**Implementation Notes:** Extended in Story 3.9 with Release and Submission tracking
 
 **Prerequisites:** Story 3.5 completed
 
@@ -415,21 +421,46 @@ So that I can manage contractor procurement.
 
 ---
 
-**Story 3.8: Tender Release and Submission Tracking**
+**Story 3.8: Tender Release and Submission Tracking** ⚠️ NOT USED - See Story 3.9
+
+**Status:** Consolidated into Story 3.9
+
+> This story has been merged with Story 3.6 (RFI and Addendum Management) to create a unified "Release, RFI, Addendum, Submission" section. All requirements from this story are preserved in Story 3.9.
+
+**Prerequisites:** N/A (see Story 3.9)
+
+---
+
+**Story 3.9: Release, RFI, Addendum, Submission Management** (NEW - Consolidation)
 
 As a user,
-I want to track tender release dates and submissions received,
-So that I can manage the tender timeline.
+I want to manage tender release, RFIs, addendums, and submissions in a unified section,
+So that I can track the complete tender communication lifecycle per firm in one place.
+
+**Background:** Consolidates Story 3.6 (RFI/Addendum - implemented) with new Release and Submission tracking features (originally planned for Story 3.8).
 
 **Acceptance Criteria:**
-1. Set tender release and closing dates
-2. Upload submissions per firm with automatic date stamp
-3. Multiple submissions per firm supported (Submission 1, Submission 2)
-4. Visual indicator when submission received
-5. Auto-filing to Documents/[Consultant]/[Firm] Submission 01.PDF
-6. Manual date override option
 
-**Prerequisites:** Story 3.7 completed
+*From Story 3.6 (Already Implemented):*
+1. Column-based RFI/Addendum layout with toggle states
+2. Document drag-drop and auto-filing
+3. Add/delete/reorder per firm
+4. Title editing
+
+*New Requirements (This Story):*
+5. Release section per firm: Release Date, Tender Package upload
+6. Tender packages auto-file to Documents/[Consultant|Contractor]/[Firm Name]/TenderPackage-[date].pdf
+7. Submission section per firm: Submission Date, Submission upload zone
+8. Submissions auto-file to Documents/[Consultant|Contractor]/[discipline or trade]/filename.pdf
+9. Support multiple submissions per firm (Submission 1, 2, 3...)
+10. Visual indicators for release/submission uploaded
+11. Section renamed to "Release, RFI, Addendum, Submission"
+12. Section positioned after "Tender Pack" in Consultant Card
+13. Fee Structure section moved to after Deliverables
+
+**Final Section Order:** (1) Firms → (2) Scope → (3) Deliverables → (4) Fee Structure → (5) Tender Pack → (6) Release/RFI/Addendum/Submission → (7) Tender Evaluation → (8) Recommendation Report
+
+**Prerequisites:** Story 3.6 completed (RFI/Addendum base), Story 3.7 completed (for Contractor Card replication)
 
 ---
 

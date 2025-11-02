@@ -320,7 +320,52 @@ export function TenderPackageDisplay({ packageData, projectId, disciplineId, onC
         )}
 
         {/* Document Schedule */}
-        {!isLoadingDocs && tenderDocuments.length > 0 && (
+        {documentSchedule && documentSchedule.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-6 bg-gradient-to-b from-green-500 to-emerald-600 rounded"></div>
+              <h3 className="text-lg font-semibold text-gray-900">Document Schedule</h3>
+            </div>
+            {documentSchedule.map((category, categoryIndex) => (
+              <div key={categoryIndex} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                {category.categoryName && (
+                  <div className="bg-gray-50 px-4 py-2 border-b">
+                    <h4 className="font-medium text-gray-900">{category.categoryName}</h4>
+                  </div>
+                )}
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="text-left p-2 font-medium text-gray-900">Document Name</th>
+                        <th className="text-left p-2 font-medium text-gray-900">Path</th>
+                        <th className="text-left p-2 font-medium text-gray-900 w-20">Version</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {category.documents.map((doc) => (
+                        <tr key={doc.id} className="hover:bg-gray-50">
+                          <td className="p-2 text-sm text-gray-900 font-medium">
+                            {doc.name}
+                          </td>
+                          <td className="p-2 text-sm text-gray-600">
+                            {doc.path}
+                          </td>
+                          <td className="p-2 whitespace-nowrap text-sm text-gray-600">
+                            v{doc.version || '1.0'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Fallback: Display tender documents from workspace if no document schedule */}
+        {!documentSchedule?.length && !isLoadingDocs && tenderDocuments.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <div className="w-1 h-6 bg-gradient-to-b from-green-500 to-emerald-600 rounded"></div>
@@ -360,7 +405,7 @@ export function TenderPackageDisplay({ packageData, projectId, disciplineId, onC
             </div>
           </div>
         )}
-        {isLoadingDocs && (
+        {!documentSchedule?.length && isLoadingDocs && (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <div className="w-1 h-6 bg-gradient-to-b from-green-500 to-emerald-600 rounded"></div>
@@ -368,45 +413,6 @@ export function TenderPackageDisplay({ packageData, projectId, disciplineId, onC
             </div>
             <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
               <p className="text-sm text-gray-500">Loading tender documents...</p>
-            </div>
-          </div>
-        )}
-
-        {/* Plan Card Sections */}
-        {planSections.length > 0 && (
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Project Plan</h3>
-            <div className="space-y-2">
-              {planSections.map((section) => {
-                const isExpanded = expandedSections.has(section.id);
-                return (
-                  <div key={section.id} className="border rounded-lg overflow-hidden">
-                    <button
-                      onClick={() => toggleSection(section.id)}
-                      className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-                    >
-                      <span className="font-medium text-gray-900">{section.name}</span>
-                      {isExpanded ? (
-                        <ChevronUp className="w-4 h-4 text-gray-500" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-gray-500" />
-                      )}
-                    </button>
-                    {isExpanded && (
-                      <div className="px-4 py-3 space-y-3 bg-white">
-                        {section.items.map((item) => (
-                          <div key={item.id} className="border-l-2 border-blue-200 pl-3">
-                            {renderItemContent(item)}
-                          </div>
-                        ))}
-                        {section.items.length === 0 && (
-                          <p className="text-sm text-gray-500 italic">No content available</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
             </div>
           </div>
         )}
@@ -452,7 +458,7 @@ export function TenderPackageDisplay({ packageData, projectId, disciplineId, onC
           </div>
         )}
 
-        {!generatedContent && planSections.length === 0 && cardSections.length === 0 && documentSchedule.length === 0 && (
+        {!generatedContent && cardSections.length === 0 && documentSchedule.length === 0 && (
           <div className="text-center py-12">
             <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500">No content available for this tender package</p>

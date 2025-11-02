@@ -1,0 +1,217 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>9</storyId>
+    <title>Release, RFI, Addendum, Submission Management</title>
+    <status>Draft</status>
+    <generatedAt>2025-11-02</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/3-9-release-rfi-addendum-submission.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to manage tender release, RFIs, addendums, and submissions in a unified section</iWant>
+    <soThat>I can track the complete tender communication lifecycle per firm in one place</soThat>
+    <tasks>
+      <task id="1">Add Release tracking (AC-45 to AC-50) - UI component, date picker, file upload, auto-filing to Documents/[Consultant|Contractor]/[Firm Name]/TenderPackage-[date].pdf</task>
+      <task id="2">Add Submission tracking (AC-51 to AC-58) - UI component, date picker, multi-file upload, auto-filing to Documents/[Consultant|Contractor]/[discipline]/filename.pdf, delete/reload functionality</task>
+      <task id="3">Update section naming and positioning (AC-59 to AC-61) - Rename RFISection component, reorder sections in Consultant Card (Fee Structure after Deliverables, Release/RFI/Addendum/Submission after Tender Pack)</task>
+      <task id="4">Extend database schema - Create Release model (firmId, releaseDate, packagePath, fileName), create TenderSubmission model (firmId, submissionNumber, submissionDate, documentPath, fileName), server actions for both models</task>
+      <task id="5">Testing - Unit tests for Release/Submission components, integration tests for file upload and auto-filing, E2E tests for complete workflow</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-45">Release section added to top of each firm column (above RFI section)</criterion>
+    <criterion id="AC-46">Release section displays: Release Date (date picker) and Tender Package upload zone</criterion>
+    <criterion id="AC-47">User can upload tender package document per firm</criterion>
+    <criterion id="AC-48">Tender package auto-files to Documents/[Consultant|Contractor]/[Firm Name]/TenderPackage-[date].pdf</criterion>
+    <criterion id="AC-49">Release date auto-populates to current date on upload (manual override available)</criterion>
+    <criterion id="AC-50">Visual indicator when tender package uploaded (green highlight or icon)</criterion>
+    <criterion id="AC-51">Submission section added to bottom of each firm column (below Addendum section)</criterion>
+    <criterion id="AC-52">Submission section displays: Submission Date (date picker) and Submission upload zone</criterion>
+    <criterion id="AC-53">User can upload submission document(s) per firm</criterion>
+    <criterion id="AC-54">Submissions auto-file to Documents/[Consultant|Contractor]/[discipline]/filename.pdf - For Consultants: Documents/Consultant/[discipline]/filename.pdf - For Contractors: Documents/Contractor/[trade]/filename.pdf</criterion>
+    <criterion id="AC-55">Submission date auto-populates to current date on upload (manual override available)</criterion>
+    <criterion id="AC-56">Visual indicator when submission received (green highlight or icon)</criterion>
+    <criterion id="AC-57">Multiple submissions per firm supported (Submission 1, Submission 2, etc.)</criterion>
+    <criterion id="AC-58">User can delete and reload submissions</criterion>
+    <criterion id="AC-59">Section renamed from "RFI and Addendum" to "Release, RFI, Addendum, Submission"</criterion>
+    <criterion id="AC-60">Section positioned after "Tender Pack" section within Consultant Card</criterion>
+    <criterion id="AC-61">Fee Structure section moved to position after Deliverables section (reordering)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Consultant &amp; Contractor Management</title>
+        <section>Data Models - Release and TenderSubmission</section>
+        <snippet>Defines Release model (firmId, releaseDate, packagePath, fileName) and TenderSubmission model (firmId, submissionNumber, uploadDate, documentPath, fileName) with Firm relations. Both models support the tender lifecycle tracking from release through submission receipt.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Consultant &amp; Contractor Management</title>
+        <section>Workflows - Tender Submission Flow</section>
+        <snippet>Submissions organized in columns (1 per firm). For Consultants: auto-file to Documents/Consultant/[Discipline]/filename.pdf. For Contractors: auto-file to Documents/Contractor/[Trade]/filename.pdf. Supports multiple submissions with incremental numbering and delete/reload functionality.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Consultant &amp; Contractor Management</title>
+        <section>Workflows - RFI and Addendum Processing Flow</section>
+        <snippet>Column-based layout per firm with 3 default placeholders (ghosted). Toggle states: green (received/released), ghosted (anticipated/pre-prepared). Selective Addendum issuance per firm. Auto-files to Documents/[Consultant|Contractor]/[Firm Name]/filename.pdf.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/3-6-rfi-and-addendum-management.md</path>
+        <title>Story 3.6: RFI and Addendum Management (IMPLEMENTED)</title>
+        <section>Implementation Summary</section>
+        <snippet>Complete RFI/Addendum system implemented with column-based layout, toggle states, drag-drop documents, auto-filing. Components: RfiSection.tsx, AddendumSection.tsx. Server actions: rfi.ts, addendum.ts. Database models: Rfi and Addendum with firmId relations. Story 3-9 extends this implementation with Release and Submission features.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR011 - Consultant Card Section Order</section>
+        <snippet>Predefined sections in order: (1) Firms, (2) Scope, (3) Deliverables, (4) Fee Structure, (5) Tender Pack, (6) Release/RFI/Addendum/Submission, (7) Tender Evaluation, (8) Tender Recommendation Report. Section 6 includes four components per firm: Release (date + package upload), RFI (table with toggle states), Addendum (table with selective issuance), Submission (date + upload, multiple submissions supported).</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR012 - Contractor Card Section Order</section>
+        <snippet>Identical section order as FR011 but for contractor trades. Submission auto-filing differs: Documents/Contractor/[trade]/filename.pdf instead of Documents/Consultant/[discipline]/filename.pdf.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>assemble-app/src/components/cards/sections/RfiSection.tsx</path>
+        <kind>component</kind>
+        <symbol>RFISection, FirmRfiCard</symbol>
+        <lines>1-807</lines>
+        <reason>Existing RFI/Addendum implementation to be extended. Column-based layout per firm with toggle states, drag-drop, date handling. Story 3-9 adds Release and Submission components to this structure.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/app/actions/rfi.ts</path>
+        <kind>server action</kind>
+        <symbol>getRfisAction, createRfiAction, updateRfiTitleAction, toggleRfiReceivedAction, uploadRfiDocumentAction, deleteRfiAction</symbol>
+        <lines>1-341</lines>
+        <reason>Server action pattern to follow for Release and TenderSubmission actions. Uses Clerk auth, Prisma, soft delete, revalidatePath. Pattern includes CRUD operations, document upload, and toggle states.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/app/actions/__tests__/rfi.test.ts</path>
+        <kind>unit test</kind>
+        <symbol>RFI Actions test suite</symbol>
+        <lines>1-100</lines>
+        <reason>Testing pattern to follow for Release and TenderSubmission action tests. Uses Vitest, mocks Clerk auth and Prisma, tests CRUD operations, authorization, and error handling.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/prisma/schema.prisma</path>
+        <kind>database schema</kind>
+        <symbol>Firm, Rfi, Addendum</symbol>
+        <lines>190-271</lines>
+        <reason>Existing Prisma models show pattern for new Release and TenderSubmission models. Firm has relations to rfis[] and addendums[]. Need to add releases[] and submissions[] relations. Both Rfi and Addendum use soft delete (deletedAt), audit fields (createdBy, updatedBy), and displayOrder for sorting.</reason>
+      </artifact>
+      <artifact>
+        <path>assemble-app/src/components/cards/ConsultantCard.tsx</path>
+        <kind>component</kind>
+        <symbol>ConsultantCard, consultantCardSections</symbol>
+        <lines>36-47, 99-100</lines>
+        <reason>Section ordering configuration. Current order positions RFI/Addendum at position 8. AC-60 requires moving to position 6 (after Tender Pack at position 5). Also needs section rename from 'Tender RFI and Addendum' to 'Release, RFI, Addendum, Submission'.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <runtime>
+        <dep name="react" version="19.1.0">UI framework</dep>
+        <dep name="next" version="15.5.6">Full-stack React framework with App Router and Server Actions</dep>
+        <dep name="@prisma/client" version="6.0.1">Type-safe database ORM for PostgreSQL</dep>
+        <dep name="@clerk/nextjs" version="6.34.0">Authentication and user management</dep>
+        <dep name="lucide-react" version="0.548.0">Icon library (Upload, FileText, Trash2, Plus, Loader2)</dep>
+        <dep name="date-fns" version="3.0.0">Date manipulation and formatting</dep>
+        <dep name="zod" version="3.25.76">Schema validation for server action inputs</dep>
+      </runtime>
+      <development>
+        <dep name="typescript" version="5.x">Type safety and IDE support</dep>
+        <dep name="vitest" version="4.0.3">Unit testing framework</dep>
+        <dep name="@testing-library/react" version="16.3.0">React component testing utilities</dep>
+        <dep name="vitest-mock-extended" version="3.1.0">Enhanced mocking capabilities for Prisma</dep>
+        <dep name="prisma" version="6.0.1">Database schema management and migrations</dep>
+      </development>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>MUST extend existing RfiSection.tsx component - rename to ReleaseRfiAddendumSubmissionSection.tsx and add Release/Submission sub-components within existing firm column structure (Option A from Story 3-9 Dev Notes)</constraint>
+    <constraint>MUST follow existing server action pattern: Clerk auth check, Prisma database operations, soft delete (deletedAt), audit fields (createdBy, updatedBy), revalidatePath for cache invalidation</constraint>
+    <constraint>MUST reuse existing firm column layout from Story 3-6 - one column per firm, side-by-side, horizontal scroll</constraint>
+    <constraint>Release auto-filing path: Documents/[Consultant|Contractor]/[Firm Name]/TenderPackage-[YYYY-MM-DD].pdf (date-stamped filename)</constraint>
+    <constraint>Submission auto-filing path: For Consultants: Documents/Consultant/[discipline]/filename.pdf, For Contractors: Documents/Contractor/[trade]/filename.pdf (preserve original filename)</constraint>
+    <constraint>Multiple submissions per firm supported with submissionNumber field (1, 2, 3...) - incremental numbering, gaps allowed after deletion</constraint>
+    <constraint>Fee Structure section already in correct position (order 4, after Deliverables) - no reordering needed despite AC-61 mention</constraint>
+    <constraint>Section rename in ConsultantCard.tsx: 'Tender RFI and Addendum' → 'Release, RFI, Addendum, Submission', id: 'rfi-addendum' remains unchanged for routing compatibility</constraint>
+    <constraint>Database models must include: Release (firmId, releaseDate, packagePath, fileName) and TenderSubmission (firmId, submissionNumber, submissionDate, documentPath, fileName) with Firm relations and soft delete</constraint>
+  </constraints>
+  <interfaces>
+    <interface>
+      <name>Release Server Actions</name>
+      <kind>Server Actions Module</kind>
+      <signature>
+// assemble-app/src/app/actions/release.ts
+export async function getReleasesAction(firmId: string): Promise&lt;ActionResult&lt;Release[]&gt;&gt;
+export async function createReleaseAction(firmId: string, releaseDate: Date, packagePath: string, fileName: string): Promise&lt;ActionResult&lt;Release&gt;&gt;
+export async function updateReleaseDateAction(releaseId: string, releaseDate: Date): Promise&lt;ActionResult&lt;Release&gt;&gt;
+export async function uploadReleasePackageAction(releaseId: string, packagePath: string, fileName: string): Promise&lt;ActionResult&lt;Release&gt;&gt;
+export async function deleteReleaseAction(releaseId: string): Promise&lt;ActionResult&lt;void&gt;&gt;
+      </signature>
+      <path>assemble-app/src/app/actions/release.ts</path>
+    </interface>
+    <interface>
+      <name>TenderSubmission Server Actions</name>
+      <kind>Server Actions Module</kind>
+      <signature>
+// assemble-app/src/app/actions/tenderSubmission.ts
+export async function getTenderSubmissionsAction(firmId: string): Promise&lt;ActionResult&lt;TenderSubmission[]&gt;&gt;
+export async function createTenderSubmissionAction(firmId: string, submissionDate: Date, documentPath: string, fileName: string): Promise&lt;ActionResult&lt;TenderSubmission&gt;&gt;
+export async function updateSubmissionDateAction(submissionId: string, submissionDate: Date): Promise&lt;ActionResult&lt;TenderSubmission&gt;&gt;
+export async function deleteTenderSubmissionAction(submissionId: string): Promise&lt;ActionResult&lt;void&gt;&gt;
+// Auto-increments submissionNumber based on existing submissions for firm
+      </signature>
+      <path>assemble-app/src/app/actions/tenderSubmission.ts</path>
+    </interface>
+    <interface>
+      <name>Firm Data Retrieval</name>
+      <kind>Server Action (existing)</kind>
+      <signature>
+// Already implemented in assemble-app/src/app/actions/firm.ts
+export async function getFirmsAction(projectId: string, disciplineId: string, cardType: 'consultant' | 'contractor'): Promise&lt;ActionResult&lt;Firm[]&gt;&gt;
+// Returns firm list with: id, entity (firm name), discipline/trade metadata
+      </signature>
+      <path>assemble-app/src/app/actions/firm.ts</path>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+Testing uses Vitest framework with React Testing Library. Server actions tested with mocked Clerk auth and Prisma client. Test files located in __tests__ directories adjacent to source files. Unit tests cover authorization, CRUD operations, error handling, and edge cases. Pattern: mock dependencies with vi.mock, clear mocks in beforeEach, assert both success and error paths, verify Prisma calls with specific parameters.
+    </standards>
+    <locations>
+      <location>assemble-app/src/app/actions/__tests__/release.test.ts</location>
+      <location>assemble-app/src/app/actions/__tests__/tenderSubmission.test.ts</location>
+      <location>assemble-app/src/components/cards/sections/__tests__/ReleaseRfiAddendumSubmissionSection.test.tsx (if component tests needed)</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-45,AC-46,AC-47">Release component displays date picker and upload zone, file upload creates Release record with correct path</idea>
+      <idea ac="AC-48">Release package auto-files to Documents/[Consultant|Contractor]/[Firm Name]/TenderPackage-[YYYY-MM-DD].pdf - test path generation for both consultant and contractor</idea>
+      <idea ac="AC-49">Release date auto-populates to current date on upload - test createReleaseAction sets date, test manual override via updateReleaseDateAction</idea>
+      <idea ac="AC-50">Visual indicator when tender package uploaded - test component shows green highlight when packagePath is not null</idea>
+      <idea ac="AC-51,AC-52,AC-53">Submission component displays date picker and upload zone, file upload creates TenderSubmission record</idea>
+      <idea ac="AC-54">Submission auto-filing to Documents/[Consultant|Contractor]/[discipline]/filename.pdf - test path generation for consultants vs contractors, verify discipline/trade in path</idea>
+      <idea ac="AC-55">Submission date auto-populates to current date on upload - test createTenderSubmissionAction sets date, test manual override</idea>
+      <idea ac="AC-56">Visual indicator when submission received - test component shows green highlight when documentPath is not null</idea>
+      <idea ac="AC-57">Multiple submissions per firm supported - test submissionNumber auto-increments (1, 2, 3...), test listing shows all submissions per firm</idea>
+      <idea ac="AC-58">User can delete and reload submissions - test deleteTenderSubmissionAction performs soft delete, test upload after delete creates new submission with next number</idea>
+      <idea ac="AC-59,AC-60">Section renamed and repositioned - test consultantCardSections array has correct name and order</idea>
+      <idea ac="AC-61">Fee Structure section positioning - verify order 4 (after Deliverables) in consultantCardSections array</idea>
+      <idea>Authorization tests - unauthorized user receives UNAUTHORIZED error for all actions</idea>
+      <idea>Database schema validation - test Prisma migrations add Release and TenderSubmission models with correct fields and relations to Firm</idea>
+      <idea>Soft delete behavior - test deleted releases/submissions excluded from queries (deletedAt: null filter)</idea>
+    </ideas>
+  </tests>
+</story-context>

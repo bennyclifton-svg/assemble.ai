@@ -95,12 +95,19 @@ export function TenderEvaluationSection({
         };
       }
 
-      setEvaluation(evaluationData);
-
-      // Load fee structure for Table 1 initialization
-      if (!evaluationData.id) {
-        await initializeTable1FromFeeStructure(shortListed);
+      // Load fee structure for Table 1 initialization if Table 1 is empty
+      if (evaluationData.tables.length > 0 && evaluationData.tables[0].items.length === 0) {
+        const feeStructureData = await getFeeStructure(projectId, disciplineId);
+        if (feeStructureData && feeStructureData.items) {
+          const evaluationItems = transformFeeStructureToEvaluationItems(
+            feeStructureData.items,
+            shortListed
+          );
+          evaluationData.tables[0].items = evaluationItems;
+        }
       }
+
+      setEvaluation(evaluationData);
     } catch (err) {
       console.error('Error loading tender evaluation:', err);
       setError('Failed to load tender evaluation data');
@@ -142,34 +149,6 @@ export function TenderEvaluationSection({
       subTotal: 0,
       sortOrder: tableNumber - 1,
     };
-  };
-
-  const initializeTable1FromFeeStructure = async (firms: any[]) => {
-    try {
-      const feeStructureData = await getFeeStructure(projectId, disciplineId);
-      if (!feeStructureData || !feeStructureData.items) return;
-
-      // Transform fee structure items to evaluation items (structure only, no prices)
-      const evaluationItems = transformFeeStructureToEvaluationItems(
-        feeStructureData.items,
-        firms
-      );
-
-      // Update Table 1 with fee structure items
-      if (evaluation && evaluation.tables.length > 0) {
-        const updatedEvaluation = {
-          ...evaluation,
-          tables: evaluation.tables.map((table) =>
-            table.tableNumber === 1
-              ? { ...table, items: evaluationItems }
-              : table
-          ),
-        };
-        setEvaluation(updatedEvaluation);
-      }
-    } catch (err) {
-      console.error('Error loading fee structure:', err);
-    }
   };
 
   const transformFeeStructureToEvaluationItems = (
@@ -274,7 +253,7 @@ export function TenderEvaluationSection({
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="text-center text-gray-500">Loading tender evaluation...</div>
+          <div className="text-center text-gray-900 font-medium">Loading tender evaluation...</div>
         </CardContent>
       </Card>
     );
@@ -300,13 +279,14 @@ export function TenderEvaluationSection({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Tender Evaluation - Price</CardTitle>
+          <CardTitle className="text-gray-900">Tender Evaluation - Price</CardTitle>
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={handleRetrieveFromTenderSchedules}
               disabled={isRetrieving}
+              className="text-gray-900 hover:bg-gray-100"
             >
               <Download className="h-4 w-4 mr-1" />
               {isRetrieving ? 'Retrieving...' : 'Retrieve from Tender Schedules'}
@@ -316,6 +296,7 @@ export function TenderEvaluationSection({
               size="sm"
               onClick={handleSave}
               disabled={isSaving || !hasUnsavedChanges}
+              className={hasUnsavedChanges ? '' : 'text-gray-900 hover:bg-gray-100'}
             >
               <Save className="h-4 w-4 mr-1" />
               {isSaving ? 'Saving...' : 'Save'}
@@ -334,12 +315,12 @@ export function TenderEvaluationSection({
 
         {/* Display short-listed firms */}
         <div className="p-4 bg-gray-50 rounded-lg">
-          <h4 className="text-sm font-medium mb-2">Short-listed Firms:</h4>
+          <h4 className="text-sm font-semibold text-gray-900 mb-2">Short-listed Firms:</h4>
           <div className="flex gap-2 flex-wrap">
             {shortListedFirms.map((firm) => (
               <span
                 key={firm.id}
-                className="px-3 py-1 bg-white border rounded-md text-sm"
+                className="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-900"
               >
                 {firm.name}
               </span>
@@ -366,21 +347,51 @@ export function TenderEvaluationSection({
               <Button
                 variant="outline"
                 onClick={handleAddTable}
+                className="text-gray-900 hover:bg-gray-100"
               >
                 <Plus className="h-4 w-4 mr-1" />
                 Add New Table
               </Button>
             </div>
 
-            {/* Grand Total */}
-            <div className="mt-6 p-4 bg-gray-100 rounded-lg">
-              <div className="flex justify-between items-center">
-                <span className="text-lg font-semibold">Grand Total (All Tables):</span>
-                <span className="text-2xl font-bold">
-                  ${(evaluation.grandTotal || 0)
-                    .toFixed(2)
-                    .replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                </span>
+            {/* Grand Total - Per Firm */}
+            <div className="mt-6 p-4 bg-gray-100 rounded-lg border-2 border-gray-300">
+              <div className="flex items-center" style={{ paddingLeft: '50px' }}>
+                {/* Description column */}
+                <div className="text-lg font-bold text-gray-900" style={{ width: '350px' }}>
+                  Grand Total (All Tables):
+                </div>
+
+                {/* Firm columns */}
+                {shortListedFirms.map((firm) => {
+                  // Calculate total across all tables for this firm
+                  const firmGrandTotal = evaluation.tables.reduce((tableSum, table) => {
+                    const tableTotal = table.items.reduce((itemSum, item) => {
+                      if (item.isCategory && item.children) {
+                        // Sum children for categories
+                        return itemSum + item.children.reduce((childSum, child) => {
+                          const price = child.firmPrices?.find(p => p.firmId === firm.id);
+                          return childSum + (price?.amount || 0);
+                        }, 0);
+                      } else if (!item.isCategory) {
+                        const price = item.firmPrices?.find(p => p.firmId === firm.id);
+                        return itemSum + (price?.amount || 0);
+                      }
+                      return itemSum;
+                    }, 0);
+                    return tableSum + tableTotal;
+                  }, 0);
+
+                  return (
+                    <div
+                      key={firm.id}
+                      className="text-right text-xl font-bold text-gray-900"
+                      style={{ width: '150px', paddingRight: '12px' }}
+                    >
+                      ${firmGrandTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

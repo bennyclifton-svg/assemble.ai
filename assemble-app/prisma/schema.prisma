@@ -12,14 +12,17 @@ datasource db {
 }
 
 model Project {
-  id        String     @id @default(cuid())
-  name      String
-  userId    String
-  cards     Card[]
-  documents Document[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  deletedAt DateTime?
+  id             String     @id @default(cuid())
+  name           String
+  userId         String
+  lastAccessedAt DateTime   @default(now())
+  cards          Card[]
+  documents      Document[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  deletedAt      DateTime?
+
+  @@index([userId, lastAccessedAt])
 }
 
 model Card {
@@ -197,8 +200,10 @@ model Firm {
   mobile           String?
   shortListed      Boolean    @default(false)
   displayOrder     Int
+  releases         Release[]
   rfis             Rfi[]
   addendums        Addendum[]
+  tenderSubmissions TenderSubmission[]
   firmPrices       FirmPrice[]
   createdAt        DateTime   @default(now())
   createdBy        String
@@ -265,6 +270,40 @@ model Addendum {
 
   @@index([firmId])
   @@index([displayOrder])
+}
+
+model Release {
+  id           String    @id @default(cuid())
+  firmId       String
+  firm         Firm      @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  releaseDate  DateTime?
+  packagePath  String?
+  fileName     String?
+  createdAt    DateTime  @default(now())
+  createdBy    String
+  updatedAt    DateTime  @updatedAt
+  updatedBy    String
+  deletedAt    DateTime?
+
+  @@index([firmId])
+}
+
+model TenderSubmission {
+  id                String    @id @default(cuid())
+  firmId            String
+  firm              Firm      @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  submissionNumber  Int       // 1, 2, 3... for incremental submissions
+  submissionDate    DateTime?
+  documentPath      String?
+  fileName          String?
+  createdAt         DateTime  @default(now())
+  createdBy         String
+  updatedAt         DateTime  @updatedAt
+  updatedBy         String
+  deletedAt         DateTime?
+
+  @@index([firmId])
+  @@index([submissionNumber])
 }
 
 model TenderPackageConfig {

@@ -5,8 +5,8 @@ Status: Draft
 ## Story
 
 As a developer,
-I want to set up the initial project infrastructure with Next.js 15, PostgreSQL, Prisma, AWS S3, and authentication,
-so that we have a solid foundation for building the multi-card workspace system.
+I want to set up the initial project infrastructure with Next.js 15, PostgreSQL, Prisma, AWS S3, authentication, and landing page with project creation,
+so that we have a solid foundation for building the multi-card workspace system with seamless project management.
 
 ## Acceptance Criteria
 
@@ -18,6 +18,10 @@ so that we have a solid foundation for building the multi-card workspace system.
 6. **AC-1.6**: Git repository initialized with proper .gitignore (excluding .env files)
 7. **AC-1.7**: Project runs locally at http://localhost:3000 with no errors
 8. **AC-1.8**: Basic folder structure matches architecture specification
+9. **AC-1.9**: Landing page displays when authenticated user has no projects (empty state)
+10. **AC-1.10**: "Create New Project" action creates project with auto-generated name (e.g., "New Project 1")
+11. **AC-1.11**: Creating project redirects user to Plan Card view for that project
+12. **AC-1.12**: Landing page shows existing projects for returning users (ordered by last accessed)
 
 ## Tasks / Subtasks
 
@@ -72,6 +76,17 @@ so that we have a solid foundation for building the multi-card workspace system.
   - [ ] Create smoke test for homepage render
   - [ ] Document setup instructions in README.md
 
+- [x] Task 8: Create landing page and project creation (AC: 1.9, 1.10, 1.11, 1.12)
+  - [x] Create landing page component at app/(dashboard)/page.tsx
+  - [x] Implement empty state UI with "Create New Project" CTA
+  - [x] Create server action at app/actions/project.ts for createProject
+  - [x] Implement auto-naming logic (count existing projects, generate "New Project N")
+  - [x] Add redirect to /projects/[id] after project creation
+  - [x] Create project list view for returning users (grid or list layout)
+  - [x] Query projects ordered by lastAccessedAt DESC
+  - [x] Add project card/item with click handler to navigate to project
+  - [x] Style with Tailwind for clean, focused interface
+
 ## Dev Notes
 
 ### Architecture Alignment
@@ -86,6 +101,9 @@ so that we have a solid foundation for building the multi-card workspace system.
 3. **File Structure**: Must match architecture.md project structure exactly
 4. **Authentication**: Clerk handles all auth flows, no custom implementation needed
 5. **Environment Variables**: Never commit secrets, use .env.example for documentation
+6. **Landing Page**: Default route (/) for authenticated users, redirects to last project or shows project list
+7. **Project Creation**: Server action pattern with optimistic UI update, auto-increment naming based on user's project count
+8. **Navigation Flow**: Landing → Create Project → Redirect to /projects/[id]/plan (Plan Card view)
 
 ### Testing Standards
 - Smoke test for basic functionality
@@ -146,4 +164,40 @@ assemble-ai/
 
 ### Completion Notes List
 
+**Task 8 Implementation - November 2, 2025**
+
+Implemented landing page with project creation and management features:
+
+**Server Actions** (`src/app/actions/project.ts`):
+- `getUserProjects()`: Fetches all user projects ordered by lastAccessedAt DESC
+- `createProject()`: Auto-generates sequential names ("New Project 1", "New Project 2", etc.)
+- `getProject()`: Fetches single project with validation
+- `renameProject()`: Updates project name with validation
+- `updateLastAccessed()`: Updates timestamp when project is accessed
+- `deleteProject()`: Soft delete functionality
+
+**UI Components Created**:
+- `src/components/project/CreateProjectButton.tsx`: Reusable button with primary/secondary variants
+- `src/components/project/ProjectCard.tsx`: Project card with relative time display (e.g., "2h ago", "Yesterday")
+- `src/app/(dashboard)/projects/page.tsx`: Landing page with empty state and project grid
+
+**Features Delivered**:
+- Empty state with "Create New Project" CTA for first-time users
+- Project grid for returning users showing all projects
+- Auto-generated sequential project names
+- Redirect to `/projects/[id]` after creation
+- "Last accessed" time formatting (Just now, Xh ago, Yesterday, Xd ago, or date)
+- Project card click navigation
+
+**Acceptance Criteria Met**: AC-1.9, AC-1.10, AC-1.11, AC-1.12
+
 ### File List
+
+**Created**:
+- `src/app/actions/project.ts`
+- `src/components/project/CreateProjectButton.tsx`
+- `src/components/project/ProjectCard.tsx`
+
+**Modified**:
+- `src/app/(dashboard)/projects/page.tsx`
+- `src/app/(dashboard)/projects/[id]/page.tsx` (added updateLastAccessed call)
